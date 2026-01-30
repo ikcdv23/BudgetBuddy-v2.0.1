@@ -1,0 +1,154 @@
+/* Estilos específicos para el Wizard (Mobile First) */
+body {
+	background-color: var(--secondary);
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100vh;
+	padding: 20px;
+}
+
+.wizard-container {
+	background-color: var(--white);
+	border-radius: var(--radius);
+	box-shadow: var(--shadow);
+	width: 100%;
+	max-width: 450px; /* En móvil ocupa todo, en escritorio se limita */
+	overflow: hidden;
+	animation: slideUpFade 0.6s ease-out;
+}
+
+.wizard-header {
+	background-color: var(--primary);
+	padding: 30px 20px;
+	text-align: center;
+	color: white;
+}
+
+.wizard-header img {
+	height: 50px;
+	margin-bottom: 10px;
+	filter: brightness(0) invert(1); /* Logo blanco */
+}
+
+.wizard-header h2 {
+	font-family: "Outfit", sans-serif;
+	font-size: 1.5rem;
+	margin-bottom: 5px;
+}
+
+.wizard-header p {
+	font-size: 0.9rem;
+	opacity: 0.9;
+}
+
+.wizard-body {
+	padding: 30px 25px;
+}
+
+.form-group {
+	margin-bottom: 20px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 8px;
+	font-weight: 600;
+	color: var(--text-main);
+	font-size: 0.95rem;
+}
+
+.input-wrapper {
+	position: relative;
+}
+
+.input-wrapper i {
+	position: absolute;
+	left: 15px;
+	top: 50%;
+	transform: translateY(-50%);
+	color: var(--text-light);
+}
+
+.form-group input {
+	width: 100%;
+	padding: 12px 15px 12px 40px; /* Espacio para el icono */
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	font-size: 1rem;
+	transition: border-color 0.3s, box-shadow 0.3s;
+	font-family: "Inter", sans-serif;
+}
+
+.form-group input:focus {
+	outline: none;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px rgba(33, 122, 74, 0.1);
+}
+
+.step-indicator {
+	display: flex;
+	justify-content: center;
+	gap: 8px;
+	margin-bottom: 20px;
+}
+
+.step-dot {
+	width: 10px;
+	height: 10px;
+	background-color: #e5e7eb;
+	border-radius: 50%;
+}
+
+.step-dot.active {
+	background-color: var(--primary);
+	transform: scale(1.2);
+}
+
+/* Estilo para el selector de país */
+.country-select {
+	background: #f3f4f6;
+	border: 1px solid #e5e7eb;
+	border-right: 1px solid #d1d5db; /* Separador sutil */
+	border-top-left-radius: 8px;
+	border-bottom-left-radius: 8px;
+	padding: 0 10px 0 35px; /* Espacio a la izq para el icono del mundo */
+	font-weight: 600;
+	color: #374151;
+	cursor: pointer;
+	outline: none;
+	appearance: none; /* Quita estilo por defecto del navegador */
+	-webkit-appearance: none;
+	min-width: 80px;
+}
+
+/* Ajuste del icono dentro del grupo */
+.iban-composite i {
+	left: 10px !important; /* Ajustar posición del icono */
+}
+
+/* Ajuste del input de texto */
+.iban-composite input {
+	border-top-left-radius: 0 !important;
+	border-bottom-left-radius: 0 !important;
+	border-left: none !important;
+}
+
+/* Efecto focus unificado */
+.iban-composite:focus-within input,
+.iban-composite:focus-within select {
+	border-color: var(--primary);
+	box-shadow: none; /* Opcional */
+}
+
+/* Animación de entrada */
+@keyframes slideUpFade {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}

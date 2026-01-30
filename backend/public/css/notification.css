@@ -1,0 +1,643 @@
+/* =========================================== */
+/* СТИЛІ ДЛЯ ПОПАПУ ПОВІДОМЛЕНЬ */
+/* =========================================== */
+
+.notifications-popup {
+    position: fixed;
+    top: 100px;
+    right: 30px;
+    width: 400px;
+    max-height: 500px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--gray-light);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.notifications-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+}
+
+.notifications-close {
+    background: none;
+    border: none;
+    font-size: 1.75rem;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: color 0.2s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.notifications-close:hover {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.notifications-list {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 350px;
+}
+
+.notifications-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notifications-list::-webkit-scrollbar-track {
+    background: var(--gray-light);
+    border-radius: 3px;
+}
+
+.notifications-list::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 3px;
+}
+
+/* Елемент повідомлення */
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-light);
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.notification-item:hover {
+    background-color: rgba(33, 122, 74, 0.03);
+}
+
+.notification-item.new {
+    background-color: rgba(33, 122, 74, 0.05);
+    border-left: 4px solid var(--primary);
+}
+
+.notification-item.important {
+    background-color: rgba(244, 72, 27, 0.05);
+    border-left: 4px solid var(--expense-red);
+}
+
+.notification-item.new::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 8px;
+    height: 8px;
+    background-color: var(--primary);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+/* Іконка повідомлення */
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+    font-size: 16px;
+}
+
+.notification-item.important .notification-icon {
+    background: linear-gradient(135deg, var(--expense-red) 0%, #d63a0e 100%);
+}
+
+.notification-item.read .notification-icon {
+    background: var(--gray-light);
+    color: var(--text-muted);
+}
+
+/* Контент повідомлення */
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-content h4 {
+    margin: 0 0 5px 0;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.notification-content p {
+    margin: 0 0 8px 0;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.notification-time {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.notification-time::before {
+    content: '🕒';
+    font-size: 10px;
+}
+
+/* Дії з повідомленнями */
+.notification-action {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 10px;
+    flex-shrink: 0;
+}
+
+.notification-action:hover {
+    background-color: var(--gray-light);
+    color: var(--text-main);
+}
+
+.notification-action i {
+    font-size: 14px;
+}
+
+/* Пустий стан */
+.notifications-empty {
+    text-align: center;
+    padding: 50px 30px;
+    color: var(--text-muted);
+}
+
+.notifications-empty i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+    display: block;
+}
+
+.notifications-empty p {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.notifications-empty span {
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+/* Футер попапу */
+.notifications-footer {
+    display: flex;
+    gap: 10px;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--gray-light);
+    background-color: #fafafa;
+}
+
+.notifications-footer .btn {
+    flex: 1;
+    justify-content: center;
+    font-size: 13px;
+    padding: 8px 12px;
+}
+
+/* Індикатор кількості повідомлень */
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--expense-red);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+/* Стилі для затемнення фону */
+.notifications-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1999;
+    display: none;
+    backdrop-filter: blur(2px);
+}
+
+/* Анімація для дзвіночка при нових повідомленнях */
+.notification-btn.shake .fa-bell {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: rotate(0); }
+    10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+    20%, 40%, 60%, 80% { transform: rotate(10deg); }
+}
+
+/* Показ при відкритті попапу */
+.notifications-popup.show {
+    display: flex;
+}
+
+.notifications-overlay.show {
+    display: block;
+}
+
+/* =========================================== */
+/* АДАПТИВНІСТЬ ДЛЯ ПОПАПУ ПОВІДОМЛЕНЬ */
+/* =========================================== */
+
+/* Планшети (992px та менше) */
+@media (max-width: 992px) {
+    .notifications-popup {
+        top: 90px;
+        right: 20px;
+        width: 380px;
+        max-height: 450px;
+    }
+    
+    .notifications-header {
+        padding: 1.1rem 1.25rem 0.9rem;
+    }
+    
+    .notifications-list {
+        max-height: 320px;
+    }
+    
+    .notification-item {
+        padding: 0.9rem 1.1rem;
+    }
+    
+    .notification-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 15px;
+        margin-right: 12px;
+    }
+    
+    .notification-content h4 {
+        font-size: 13px;
+    }
+    
+    .notification-content p {
+        font-size: 12px;
+    }
+    
+    .notification-time {
+        font-size: 11px;
+    }
+    
+    .notification-action {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .notification-action i {
+        font-size: 13px;
+    }
+}
+
+/* Планшети та великі телефони (768px та менше) */
+@media (max-width: 768px) {
+    .notifications-popup {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 80vh;
+        border-radius: 20px 20px 0 0;
+        animation: slideUp 0.3s ease-out;
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .notifications-header {
+        padding: 1rem 1.25rem 0.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .notifications-header h3 {
+        font-size: 1rem;
+    }
+    
+    .notifications-close {
+        font-size: 1.5rem;
+        width: 30px;
+        height: 30px;
+    }
+    
+    .notifications-list {
+        max-height: 60vh;
+    }
+    
+    .notification-item {
+        padding: 0.875rem 1rem;
+    }
+    
+    .notification-item.new::before {
+        top: 12px;
+        right: 12px;
+        width: 7px;
+        height: 7px;
+    }
+    
+    .notification-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+        margin-right: 12px;
+    }
+    
+    .notifications-footer {
+        padding: 0.875rem 1rem;
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        flex-wrap: wrap;
+    }
+    
+    .notifications-footer .btn {
+        min-width: calc(50% - 5px);
+        font-size: 12px;
+        padding: 7px 10px;
+    }
+    
+    .notifications-empty {
+        padding: 40px 25px;
+    }
+    
+    .notifications-empty i {
+        font-size: 40px;
+    }
+    
+    .notifications-empty p {
+        font-size: 15px;
+    }
+}
+
+/* Телефони (480px та менше) */
+@media (max-width: 480px) {
+    .notifications-popup {
+        max-height: 85vh;
+        border-radius: 16px 16px 0 0;
+    }
+    
+    .notifications-header {
+        padding: 1rem 1rem 0.75rem;
+    }
+    
+    .notifications-header h3 {
+        font-size: 0.95rem;
+        gap: 8px;
+    }
+    
+    .notifications-list {
+        max-height: 65vh;
+    }
+    
+    .notification-item {
+        padding: 0.8rem 0.9rem;
+    }
+    
+    .notification-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 13px;
+        margin-right: 10px;
+        border-radius: 10px;
+    }
+    
+    .notification-content h4 {
+        font-size: 12.5px;
+        margin-bottom: 4px;
+    }
+    
+    .notification-content p {
+        font-size: 11.5px;
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+    
+    .notification-time {
+        font-size: 10.5px;
+    }
+    
+    .notification-action {
+        width: 28px;
+        height: 28px;
+        margin-left: 8px;
+    }
+    
+    .notification-action i {
+        font-size: 12px;
+    }
+    
+    .notifications-footer {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .notifications-footer .btn {
+        width: 100%;
+        min-width: auto;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+    
+    .notifications-empty {
+        padding: 35px 20px;
+    }
+    
+    .notifications-empty i {
+        font-size: 36px;
+    }
+    
+    .notifications-empty p {
+        font-size: 14px;
+    }
+    
+    .notifications-empty span {
+        font-size: 12px;
+    }
+}
+
+/* Малі телефони (375px та менше) */
+@media (max-width: 375px) {
+    .notifications-popup {
+        max-height: 90vh;
+    }
+    
+    .notifications-header {
+        padding: 0.9rem 0.9rem 0.7rem;
+    }
+    
+    .notifications-header h3 {
+        font-size: 0.9rem;
+    }
+    
+    .notifications-close {
+        font-size: 1.4rem;
+        width: 28px;
+        height: 28px;
+    }
+    
+    .notifications-list {
+        max-height: 70vh;
+    }
+    
+    .notification-item {
+        padding: 0.7rem 0.8rem;
+    }
+    
+    .notification-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+        margin-right: 8px;
+        border-radius: 8px;
+    }
+    
+    .notification-content h4 {
+        font-size: 12px;
+    }
+    
+    .notification-content p {
+        font-size: 11px;
+    }
+    
+    .notification-time {
+        font-size: 10px;
+    }
+    
+    .notification-item.new::before {
+        top: 10px;
+        right: 10px;
+        width: 6px;
+        height: 6px;
+    }
+    
+    .notifications-empty {
+        padding: 30px 15px;
+    }
+    
+    .notifications-empty i {
+        font-size: 32px;
+    }
+    
+    .notifications-empty p {
+        font-size: 13px;
+    }
+    
+    .notifications-empty span {
+        font-size: 11px;
+    }
+}
+
+/* Дуже малі телефони (до 320px) */
+@media (max-width: 320px) {
+    .notifications-header h3 {
+        font-size: 0.85rem;
+    }
+    
+    .notification-content h4 {
+        font-size: 11.5px;
+    }
+    
+    .notification-content p {
+        font-size: 10.5px;
+    }
+    
+    .notification-time {
+        font-size: 9.5px;
+    }
+    
+    .notification-icon {
+        width: 28px;
+        height: 28px;
+        font-size: 11px;
+    }
+    
+    .notification-action {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .notification-action i {
+        font-size: 11px;
+    }
+}

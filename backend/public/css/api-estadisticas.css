@@ -1,0 +1,643 @@
+/* api-estadisticas.css - Estilos específicos para estadísticas */
+
+/* ============ ЗМІННІ З DESKTOP.CSS ============ */
+:root {
+    --sidebar-width: 70px;
+    --header-height: 70px;
+    --primary: #217A4A;
+    --primary-dark: #1a603a;
+    --expense-red: #F4481B;
+    --income-green: #00B934;
+    --background: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --text-main: #000000;
+    --text-muted: #757575;
+    --border: #757575; /* ОСЬ ЦЕ ТЕПЕР ТУТ! */
+    --gray-light: #F5F5F5;
+    --hover-green: #C7FAC3;
+    --border-icon: #757575;
+    --date-bg: #525050;
+    --green-bg: #C7FAC3;
+    
+    /* Додаткові для статистик */
+    --market-up: #10b981;
+    --market-down: #ef4444;
+    --market-neutral: #6b7280;
+    --chart-bg: #FFFFFF;
+    --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    --card-border: #757575;
+}
+
+/* ============ ДОДАТКОВІ СТИЛІ ДЛЯ HEADER ============ */
+.desktop-header {
+    position: fixed;
+    top: 20px;
+    left: 30px;
+    right: 20px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(40px) saturate(200%) contrast(120%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%) contrast(120%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 30px;
+    z-index: 1000;
+    border-radius: 50px;
+    border: 1px solid var(--border);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        0 1px 0 rgba(255, 255, 255, 0.5) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.05) inset;
+    transition: all 0.5s ease;
+    overflow: hidden;
+}
+
+.desktop-header.scrolled {
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(50px) saturate(250%) contrast(130%);
+    -webkit-backdrop-filter: blur(50px) saturate(250%) contrast(130%);
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 
+        0 12px 48px rgba(0, 0, 0, 0.12),
+        0 2px 0 rgba(255, 255, 255, 0.6) inset,
+        0 -2px 0 rgba(0, 0, 0, 0.1) inset;
+}
+
+.desktop-header.scrolled-active {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(60px) saturate(200%);
+    border-color: rgba(117, 117, 117, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.desktop-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.4) 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+    border-radius: 50px;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.desktop-brand img {
+    height: 45px;
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.desktop-brand img:hover {
+    transform: scale(1.05);
+}
+
+.desktop-header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.top-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--gray-light);
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border-icon);
+    position: relative;
+}
+
+.top-icon:hover {
+    background-color: var(--hover-green);
+    border-color: var(--primary);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: var(--expense-red);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-profile-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-top {
+    width: 45px;
+    height: 45px;
+    background-color: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.user-avatar-top:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ============ РЕШТА ТВОЄГО CSS (без змін) ============ */
+.market-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.summary-card {
+    background-color: var(--chart-bg);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: transform 0.2s;
+}
+
+.summary-card:hover {
+    transform: translateY(-3px);
+}
+
+.summary-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.summary-content h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.summary-content .price {
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+    margin-bottom: 3px;
+}
+
+.summary-content .change {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.change.positive {
+    color: var(--market-up);
+}
+
+.change.negative {
+    color: var(--market-down);
+}
+
+/* Timeframe Selector */
+.timeframe-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+}
+
+.time-btn {
+    background: white;
+    border: 1px solid var(--card-border);
+    border-radius: 15px;
+    padding: 8px 16px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.time-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.time-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* Charts Container */
+.charts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.chart-card {
+    background-color: var(--chart-bg);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    height: 500px; /* Фіксована висота для всіх карток */
+    overflow: hidden;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0; /* Не стискається */
+}
+
+.chart-header h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.chart-info {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.symbol {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-muted);
+    font-size: 13px;
+    background: var(--gray-light);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.market-status {
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+.market-status.open {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.market-status.closed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.chart-wrapper {
+    flex: 1; /* Займає всю доступну висоту */
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.chart-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(117, 117, 117, 0.2);
+    flex-shrink: 0; /* Не стискається */
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    display: block;
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* ETF Comparison */
+.etf-comparison {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.section-desc {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-muted);
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.comparison-chart {
+    background: var(--chart-bg);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+    height: 350px;
+}
+
+.comparison-chart canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.etf-details {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.etf-card {
+    background: var(--chart-bg);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+}
+
+.etf-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.etf-icon {
+    font-size: 24px;
+    color: var(--primary);
+}
+
+.etf-header h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+.etf-content p {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-main);
+    line-height: 1.5;
+    margin-bottom: 15px;
+    opacity: 0.9;
+}
+
+.etf-features {
+    list-style: none;
+    padding: 0;
+}
+
+.etf-features li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-main);
+    font-size: 14px;
+}
+
+.etf-features li i {
+    color: var(--primary);
+    width: 16px;
+}
+
+.fa-flag-spain:before {
+    content: "🇪🇸";
+    font-size: 20px;
+}
+
+/* Educational Content */
+.educational-content {
+    margin-bottom: 40px;
+}
+
+.educational-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.edu-card {
+    background: var(--chart-bg);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+}
+
+.edu-icon {
+    width: 50px;
+    height: 50px;
+    background: var(--primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    color: white;
+    font-size: 20px;
+}
+
+.edu-card h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 16px;
+    color: var(--text-main);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.edu-card p {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-main);
+    line-height: 1.5;
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.disclaimer {
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.disclaimer i {
+    color: #d97706;
+    font-size: 20px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.disclaimer p {
+    font-family: 'Roboto', sans-serif;
+    color: #78350f;
+    margin: 0;
+    line-height: 1.5;
+    font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .educational-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .etf-details {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .chart-card {
+        height: 450px;
+    }
+}
+
+@media (max-width: 992px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .market-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-card {
+        height: 400px;
+    }
+    
+    .comparison-chart {
+        height: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .educational-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .etf-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-stats {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .chart-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .timeframe-selector {
+        overflow-x: auto;
+        justify-content: flex-start;
+        padding-bottom: 10px;
+    }
+    
+    .time-btn {
+        flex-shrink: 0;
+    }
+    
+    .chart-card {
+        height: 350px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chart-card {
+        height: 300px;
+    }
+    
+    .comparison-chart {
+        height: 250px;
+    }
+    
+    .summary-card {
+        padding: 15px;
+    }
+}

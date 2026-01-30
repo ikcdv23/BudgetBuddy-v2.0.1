@@ -8,6 +8,7 @@ services:
       - "80:80" # ÚNICO PUERTO ABIERTO AL MUNDO
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www/html # <--- Asegúrate de que Nginx pueda ver el backend (PROVISIONAL)
     depends_on:
       - frontend
     networks:
