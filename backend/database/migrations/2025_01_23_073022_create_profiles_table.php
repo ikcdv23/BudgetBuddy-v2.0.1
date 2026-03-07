@@ -16,6 +16,7 @@ return new class extends Migration
             // unique() fuerza la relación 1 a 1 (un usuario solo puede tener un perfil)
             $table->foreignId('user_id')->constrained()->onDelete('cascade')->unique();
             $table->string('lastname')->nullable();
+            $table->string('phone_country_code', 5)->nullable()->default('+34');
             $table->string('phone')->nullable();
             $table->string('avatar')->nullable();
             $table->string('currency', 3)->default('EUR');

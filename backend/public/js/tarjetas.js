@@ -1,8 +1,10 @@
-// tarjetas.js - Спрощена версія без CSRF
+// tarjetas.js
 
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
+    // getCookie, escapeHTML, formatDate, showNotification -> app-base.js
+
     // ==========================================
-    // 1. КОНФІГУРАЦІЯ API
+    // 1. API CONFIGURATION
     // ==========================================
     const API = {
         CARDS: {
@@ -31,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentCards = [];
     let currentTags = [];
     let currentMovements = [];
+    let currentAccounts = [];
     let selectedCardId = null;
     let draggedCardId = null;
 
@@ -54,12 +57,20 @@ document.addEventListener('DOMContentLoaded', function () {
         saveMovementBtn: document.getElementById('saveMovementBtn'),
         movementForm: document.getElementById('movementForm'),
         movementCardSelect: document.getElementById('movementCard'),
+        movementCardGroup: document.getElementById('movementCardGroup'),
+        movementAccountSelect: document.getElementById('movementAccount'),
+        movementAccountGroup: document.getElementById('movementAccountGroup'),
+        destinationTypeGroup: document.getElementById('destinationTypeGroup'),
+        destinationAccountGroup: document.getElementById('destinationAccountGroup'),
+        destinationAccountSelect: document.getElementById('destinationAccount'),
+        destinationIbanGroup: document.getElementById('destinationIbanGroup'),
+        destinationIbanInput: document.getElementById('destinationIban'),
         movementCategorySelect: document.getElementById('movementCategory'),
         dateContainer: document.getElementById('current-date')
     };
 
     // ==========================================
-    // 4. ДОПОМІЖНІ ФУНКЦІЇ
+    // 4. HELPER FUNCTIONS
     // ==========================================
     function formatCurrency(amount) {
         if (amount === undefined || amount === null || isNaN(amount)) amount = 0;
@@ -69,19 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(amount);
-    }
-
-    function formatDate(dateString) {
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('es-ES', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-            });
-        } catch (e) {
-            return dateString || 'Fecha desconocida';
-        }
     }
 
     function updateDate() {
@@ -94,46 +92,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    function showNotification(message, type = 'info') {
-        const oldNotifications = document.querySelectorAll('.notification');
-        oldNotifications.forEach(n => n.remove());
-
-        const notification = document.createElement('div');
-        notification.className = 'notification';
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle'}"></i>
-                <span>${message}</span>
-            </div>
-        `;
-
-        notification.style.cssText = `
-            position: fixed;
-            top: 120px;
-            right: 20px;
-            background: ${type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6'};
-            color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        `;
-
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
-    }
-
-    // Функція для API запитів (без CSRF)
     async function apiRequest(url, method = 'GET', data = null) {
+        // Obtener CSRF cookie antes de peticiones mutantes
+        if (method !== 'GET') {
+            await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
+        }
+
         const options = {
             method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
             },
             credentials: 'same-origin'
         };
@@ -257,6 +228,32 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Error loading envelopes:', error);
             currentEnvelopes = [];
         }
+    }
+
+    async function loadAccounts() {
+        try {
+            const data = await apiRequest(API.ACCOUNTS.INDEX);
+            if (data) {
+                currentAccounts = Array.isArray(data) ? data : [];
+                console.log(`Loaded ${currentAccounts.length} accounts`);
+            }
+        } catch (error) {
+            console.error('Error loading accounts:', error);
+            currentAccounts = [];
+        }
+    }
+
+    function populateAccountSelect(selectEl, excludeId) {
+        if (!selectEl) return;
+        selectEl.innerHTML = '<option value="">Seleccionar cuenta...</option>';
+        currentAccounts.forEach(acc => {
+            if (excludeId && acc.id === excludeId) return;
+            const option = document.createElement('option');
+            option.value = acc.id;
+            const shortIban = acc.iban ? acc.iban.slice(-4) : '????';
+            option.textContent = `${acc.bank_name} - **** ${shortIban}`;
+            selectEl.appendChild(option);
+        });
     }
 
     // Відображення списку конвертів у модальному вікні / Mostrar lista de sobres en el modal
@@ -404,11 +401,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
             cardEl.innerHTML = `
                 <div class="mini-card-top">
-                    <span style="font-weight: 500; font-size: 0.9rem;">${card.alias}</span>
-                    <i class="fab fa-cc-${visualType}" style="font-size: 1.8rem; opacity: 0.9;"></i>
+                    <span style="font-weight: 500; font-size: 0.9rem;">${escapeHTML(card.alias)}</span>
+                    <i class="fab fa-cc-${escapeHTML(visualType)}" style="font-size: 1.8rem; opacity: 0.9;"></i>
                 </div>
                 <div class="mini-card-number">
-                    **** **** **** ${card.last_4_digits || "0000"}
+                    **** **** **** ${escapeHTML(card.last_4_digits || "0000")}
                 </div>
                 <div class="mini-card-bottom">
                     <div>
@@ -417,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     </div>
                     <div style="text-align: right;">
                         <div style="font-size: 0.6rem; opacity: 0.7;">Expira</div>
-                        <div style="font-size: 0.8rem">${expDateFormatted}</div>
+                        <div style="font-size: 0.8rem">${escapeHTML(expDateFormatted)}</div>
                     </div>
                 </div>
             `;
@@ -511,10 +508,10 @@ document.addEventListener('DOMContentLoaded', function () {
         currentMovements.forEach(movement => {
             const row = document.createElement('tr');
 
-            let tagHTML = '<span class="category-tag" style="background-color: #9ca3af;">Sin categoría</span>';
+            let tagHTML = '<span class="category-tag" style="background-color: #9ca3af;">Sin categoria</span>';
             if (movement.tags && movement.tags.length > 0) {
                 tagHTML = movement.tags.map(tag =>
-                    `<span class="category-tag" style="background-color: ${tag.color || '#9ca3af'};">${tag.name}</span>`
+                    `<span class="category-tag" style="background-color: ${escapeHTML(tag.color || '#9ca3af')};">${escapeHTML(tag.name)}</span>`
                 ).join('');
             }
 
@@ -532,10 +529,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 `-€${Math.abs(amount).toFixed(2)}`;
 
             row.innerHTML = `
-                <td>${movement.description || 'Sin descripción'}</td>
-                <td>#${movement.id || 'N/A'}</td>
-                <td>${formatDate(movement.date || movement.created_at)}</td>
-                <td class="${amountClass}">${formattedAmount}</td>
+                <td>${escapeHTML(movement.description || 'Sin descripcion')}</td>
+                <td>#${escapeHTML(movement.id || 'N/A')}</td>
+                <td>${escapeHTML(formatDate(movement.date || movement.created_at))}</td>
+                <td class="${amountClass}">${escapeHTML(formattedAmount)}</td>
                 <td><div class="category-tags">${tagHTML}</div></td>
             `;
 
@@ -703,6 +700,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function openMovementModal() {
+        // Reset tipo a gasto
+        const gastoRadio = document.querySelector('input[name="movement_type"][value="gasto"]');
+        if (gastoRadio) gastoRadio.checked = true;
+
+        // Reset visibility: gasto = solo tarjeta
+        if (dom.movementCardGroup) dom.movementCardGroup.style.display = '';
+        if (dom.movementAccountGroup) dom.movementAccountGroup.style.display = 'none';
+        if (dom.destinationTypeGroup) dom.destinationTypeGroup.style.display = 'none';
+        if (dom.destinationAccountGroup) dom.destinationAccountGroup.style.display = 'none';
+        if (dom.destinationIbanGroup) dom.destinationIbanGroup.style.display = 'none';
+
         if (dom.movementCardSelect) {
             dom.movementCardSelect.innerHTML = '';
 
@@ -773,11 +781,11 @@ document.addEventListener('DOMContentLoaded', function () {
                             `-€${Math.abs(amount).toFixed(2)}`;
 
                         row.innerHTML = `
-                            <td>${movement.description || 'Sin descripción'}</td>
-                            <td>#${movement.id || 'N/A'}</td>
-                            <td>${formatDate(movement.date || movement.created_at)}</td>
-                            <td class="${amountClass}">${formattedAmount}</td>
-                            <td><div class="category-tags">${movement.tags ? movement.tags.map(t => `<span class="category-tag">${t.name}</span>`).join('') : ''}</div></td>
+                            <td>${escapeHTML(movement.description || 'Sin descripcion')}</td>
+                            <td>#${escapeHTML(movement.id || 'N/A')}</td>
+                            <td>${escapeHTML(formatDate(movement.date || movement.created_at))}</td>
+                            <td class="${amountClass}">${escapeHTML(formattedAmount)}</td>
+                            <td><div class="category-tags">${movement.tags ? movement.tags.map(t => `<span class="category-tag">${escapeHTML(t.name)}</span>`).join('') : ''}</div></td>
                         `;
                         tempBody.appendChild(row);
                     });
@@ -785,6 +793,70 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 showNotification(`Filtro aplicado: ${this.textContent}`, 'info');
             });
+        });
+    }
+
+    // Toggle campos según tipo de movimiento
+    document.querySelectorAll('input[name="movement_type"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const type = this.value;
+            // Gasto: solo tarjeta
+            if (type === 'gasto') {
+                if (dom.movementCardGroup) dom.movementCardGroup.style.display = '';
+                if (dom.movementAccountGroup) dom.movementAccountGroup.style.display = 'none';
+                if (dom.destinationTypeGroup) dom.destinationTypeGroup.style.display = 'none';
+                if (dom.destinationAccountGroup) dom.destinationAccountGroup.style.display = 'none';
+                if (dom.destinationIbanGroup) dom.destinationIbanGroup.style.display = 'none';
+            }
+            // Ingreso: solo cuenta
+            else if (type === 'ingreso') {
+                if (dom.movementCardGroup) dom.movementCardGroup.style.display = 'none';
+                if (dom.movementAccountGroup) dom.movementAccountGroup.style.display = '';
+                populateAccountSelect(dom.movementAccountSelect);
+                if (dom.destinationTypeGroup) dom.destinationTypeGroup.style.display = 'none';
+                if (dom.destinationAccountGroup) dom.destinationAccountGroup.style.display = 'none';
+                if (dom.destinationIbanGroup) dom.destinationIbanGroup.style.display = 'none';
+            }
+            // Traspaso: cuenta origen + destino
+            else if (type === 'traspaso') {
+                if (dom.movementCardGroup) dom.movementCardGroup.style.display = 'none';
+                if (dom.movementAccountGroup) dom.movementAccountGroup.style.display = '';
+                populateAccountSelect(dom.movementAccountSelect);
+                if (dom.destinationTypeGroup) dom.destinationTypeGroup.style.display = '';
+                // Reset destination type to own_account
+                const ownRadio = document.querySelector('input[name="destination_type"][value="own_account"]');
+                if (ownRadio) ownRadio.checked = true;
+                if (dom.destinationAccountGroup) dom.destinationAccountGroup.style.display = '';
+                populateAccountSelect(dom.destinationAccountSelect);
+                if (dom.destinationIbanGroup) dom.destinationIbanGroup.style.display = 'none';
+            }
+        });
+    });
+
+    // Toggle destino traspaso (cuenta propia vs IBAN externo)
+    document.querySelectorAll('input[name="destination_type"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            if (this.value === 'own_account') {
+                if (dom.destinationAccountGroup) dom.destinationAccountGroup.style.display = '';
+                if (dom.destinationIbanGroup) dom.destinationIbanGroup.style.display = 'none';
+                // Excluir cuenta origen del destino
+                const originId = dom.movementAccountSelect ? parseInt(dom.movementAccountSelect.value) : null;
+                populateAccountSelect(dom.destinationAccountSelect, originId);
+            } else {
+                if (dom.destinationAccountGroup) dom.destinationAccountGroup.style.display = 'none';
+                if (dom.destinationIbanGroup) dom.destinationIbanGroup.style.display = '';
+            }
+        });
+    });
+
+    // Cuando cambia la cuenta origen en traspaso, actualizar cuenta destino
+    if (dom.movementAccountSelect) {
+        dom.movementAccountSelect.addEventListener('change', function () {
+            const type = document.querySelector('input[name="movement_type"]:checked');
+            const destType = document.querySelector('input[name="destination_type"]:checked');
+            if (type && type.value === 'traspaso' && destType && destType.value === 'own_account') {
+                populateAccountSelect(dom.destinationAccountSelect, parseInt(this.value));
+            }
         });
     }
 
@@ -865,21 +937,59 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
 
             const envelopeValue = document.getElementById('movementEnvelope').value;
+            const type = document.querySelector('input[name="movement_type"]:checked').value;
+            const amount = Math.abs(parseFloat(document.getElementById('movementAmount').value));
+            const description = document.getElementById('movementDescription').value;
+            const date = document.getElementById('movementDate').value;
 
-            const movementData = {
-                card_id: parseInt(dom.movementCardSelect.value),
-                tag_id: dom.movementCategorySelect.value ? parseInt(dom.movementCategorySelect.value) : null,
-                envelope_id: envelopeValue ? parseInt(envelopeValue) : null,
-                amount: Math.abs(parseFloat(document.getElementById('movementAmount').value)),
-                description: document.getElementById('movementDescription').value,
-                date: document.getElementById('movementDate').value,
-                type: document.querySelector('input[name="movement_type"]:checked').value
-            };
-
-            if (!movementData.amount || isNaN(movementData.amount) ||
-                !movementData.description || !movementData.card_id) {
+            if (!amount || isNaN(amount) || !description) {
                 showNotification('Por favor, complete todos los campos obligatorios', 'error');
                 return;
+            }
+
+            // Construir payload según tipo
+            const movementData = {
+                type: type,
+                amount: amount,
+                description: description,
+                date: date,
+                tag_id: dom.movementCategorySelect.value ? parseInt(dom.movementCategorySelect.value) : null,
+                envelope_id: envelopeValue ? parseInt(envelopeValue) : null,
+            };
+
+            if (type === 'gasto') {
+                if (!dom.movementCardSelect.value) {
+                    showNotification('Selecciona una tarjeta para el gasto', 'error');
+                    return;
+                }
+                movementData.card_id = parseInt(dom.movementCardSelect.value);
+            } else if (type === 'ingreso') {
+                if (!dom.movementAccountSelect.value) {
+                    showNotification('Selecciona una cuenta para el ingreso', 'error');
+                    return;
+                }
+                movementData.account_id = parseInt(dom.movementAccountSelect.value);
+            } else if (type === 'traspaso') {
+                if (!dom.movementAccountSelect.value) {
+                    showNotification('Selecciona una cuenta de origen', 'error');
+                    return;
+                }
+                movementData.account_id = parseInt(dom.movementAccountSelect.value);
+                const destType = document.querySelector('input[name="destination_type"]:checked').value;
+                movementData.destination_type = destType;
+                if (destType === 'own_account') {
+                    if (!dom.destinationAccountSelect.value) {
+                        showNotification('Selecciona una cuenta de destino', 'error');
+                        return;
+                    }
+                    movementData.destination_account_id = parseInt(dom.destinationAccountSelect.value);
+                } else {
+                    if (!dom.destinationIbanInput.value) {
+                        showNotification('Introduce el IBAN de destino', 'error');
+                        return;
+                    }
+                    movementData.destination_iban = dom.destinationIbanInput.value;
+                }
             }
 
             const originalText = dom.saveMovementBtn.innerHTML;
@@ -901,80 +1011,27 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-    // Elemento del DOM
-    const userAvatarTop = document.querySelector(".user-avatar-top");
-
-    // 1. ESTADO DE CARGA (Spinner)
-    userAvatarTop.innerHTML = `
-    <div style="text-align: center; padding: 40px; color: var(--color-gray-500);">
-        <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
-    </div>`;
-    /**
-    * Carga el usuario logueado y actualiza el avatar
-    */
-    async function loadUserProfile() {
-        console.log("Cargando perfil de usuario...");
-
-        try {
-            // Petición estándar a Laravel para obtener el usuario autenticado
-            const response = await fetch("/api/user", {
-                headers: { Accept: "application/json" },
-                credentials: "same-origin",
-            });
-
-            if (response.ok) {
-                const user = await response.json();
-                // Asumimos que tu tabla users tiene una columna 'name'
-                updateAvatarUI(user.name);
-            }
-        } catch (error) {
-            console.error("Error cargando usuario:", error);
-            showNotification("Error cargando perfil de usuario", "error");
-        }
-    }
-
-    /**
-     * Calcula las iniciales y actualiza el círculo del header
-     * Ej: "Juan Pérez" -> "JP"
-     */
-    function updateAvatarUI(fullName) {
-        if (!userAvatarTop || !fullName) return;
-
-        // Dividimos el nombre por espacios
-        const parts = fullName.trim().split(" ");
-
-        // Tomamos la primera letra del primer nombre
-        let initials = parts[0].charAt(0).toUpperCase();
-
-        // Si hay apellido (o segundo nombre), tomamos su inicial también
-        if (parts.length > 1) {
-            initials += parts[parts.length - 1].charAt(0).toUpperCase();
-        }
-
-        userAvatarTop.textContent = initials;
-        // Opcional: poner el nombre completo en el título al pasar el ratón
-        userAvatarTop.title = fullName;
-    }
     // ==========================================
-    // 10. ІНІЦІАЛІЗАЦІЯ
+    // 10. INITIALIZATION
     // ==========================================
     async function init() {
         console.log('Initializing tarjetas.js...');
         updateDate();
 
-        try {
-            await Promise.all([
-                loadCards(),
-                loadTags(),
-                loadMovements(),
-                loadUserProfile(),
-                loadEnvelopes()
-            ]);
+        const results = await Promise.allSettled([
+            loadCards(),
+            loadTags(),
+            loadMovements(),
+            loadEnvelopes(),
+            loadAccounts()
+        ]);
 
+        const failed = results.filter(r => r.status === 'rejected');
+        if (failed.length > 0) {
+            console.error('Some loads failed:', failed);
+            showNotification('Algunos datos no se pudieron cargar', 'error');
+        } else {
             showNotification('Sistema cargado correctamente', 'success');
-        } catch (error) {
-            console.error('Error during initialization:', error);
-            showNotification('Error al cargar los datos', 'error');
         }
 
         setInterval(updateDate, 60000);
@@ -984,4 +1041,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.openCardModal = openCardModal;
     init();
-});
+})();

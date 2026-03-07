@@ -21,7 +21,7 @@ class ProfileController extends Controller
         }
 
         // MODO WEB: Si entras por el navegador, devolvemos la VISTA
-        return view('ajustes', compact('user'));
+        return view('ajustes', ['user' => $user, 'currentPage' => 'ajustes']);
     }
 
     // ==========================================
@@ -33,9 +33,10 @@ class ProfileController extends Controller
 
         // Validación común para ambos mundos
         $validated = $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255', // En setup es obligatorio
-            'phone'      => 'nullable|string|max:20',
+            'first_name'         => 'required|string|max:255',
+            'last_name'          => 'required|string|max:255',
+            'phone_country_code' => 'nullable|string|max:5',
+            'phone'              => 'nullable|string|max:20',
         ]);
 
         // 1. Guardar en tabla USERS (Nombre de pila)
@@ -47,8 +48,9 @@ class ProfileController extends Controller
         $user->profile()->updateOrCreate(
             ['user_id' => $user->id],
             [
-                'lastname' => $validated['last_name'],
-                'phone'    => $validated['phone'],  
+                'lastname'           => $validated['last_name'],
+                'phone_country_code' => $validated['phone_country_code'] ?? '+34',
+                'phone'              => $validated['phone'],
             ]
         );
 

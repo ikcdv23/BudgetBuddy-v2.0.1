@@ -6,8 +6,9 @@
 # ... (al inicio)
 
 echo "🔧 Ajustando permisos de carpetas críticas..."
-# Damos permisos de escritura al grupo y usuario (777 es drástico pero seguro para entornos de desarrollo escolar)
-chmod -R 777 storage bootstrap/cache
+# Asignar ownership a www-data y permisos seguros
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R 775 storage bootstrap/cache
 
 # 1. Instalar dependencias si no existen
 if [ ! -d "vendor" ]; then
@@ -29,14 +30,21 @@ fi
 
 # 4. Esperar a que la base de datos arranque (A veces el contenedor de DB tarda más)
 echo "⏳ Esperando a la base de datos..."
-# (Aquí podríamos poner un script de espera, pero por ahora confiaremos en depends_on)
 
-# Intentamos conectar hasta que responda. 
-# Usamos un bucle infinito que se rompe cuando la conexión tiene éxito.
-# 'db' es el nombre de tu servicio en docker-compose
-# 'budgetbuddy' es el nombre de tu base de datos en el .env
-until php -r "try { new PDO('mysql:host=db;dbname=budgetbuddy', 'root', 'root'); echo 'Conectado'; } catch (PDOException \$e) { exit(1); }" > /dev/null 2>&1; do
-  echo "zzz... MySQL aún no está listo. Reintentando en 3 segundos..."
+# Cargar variables del .env para que getenv() funcione en el health check
+if [ -f ".env" ]; then
+    export $(grep -v '^#' .env | grep -v '^\s*$' | sed 's/\s*$//' | xargs)
+fi
+
+MAX_RETRIES=20
+RETRY_COUNT=0
+until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); echo 'Conectado'; } catch (PDOException \$e) { exit(1); }" > /dev/null 2>&1; do
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+    echo "ERROR: No se pudo conectar a MySQL tras $MAX_RETRIES intentos."
+    exit 1
+  fi
+  echo "zzz... MySQL aún no está listo. Reintentando en 3 segundos... ($RETRY_COUNT/$MAX_RETRIES)"
   sleep 3
 done
 

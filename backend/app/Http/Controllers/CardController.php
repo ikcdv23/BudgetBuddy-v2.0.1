@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Card;
 use App\Models\Account;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CardController extends Controller{
 
@@ -15,7 +16,7 @@ class CardController extends Controller{
             $user = Auth::user();
             $cards = Card::whereHas('account', function($query) use ($user) {
                 $query->where('user_id', $user->id);
-            })->with('account')->get();
+            })->with('account')->limit(100)->get();
             
             return response()->json($cards);
         }
@@ -71,9 +72,13 @@ class CardController extends Controller{
             ], 201);
 
         } catch (\Exception $e) {
+            Log::error('Card creation error', [
+                'user_id' => Auth::id(),
+                'exception' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'message' => 'Error al crear la tarjeta',
-                'error' => $e->getMessage()
             ], 500);
         }
     }

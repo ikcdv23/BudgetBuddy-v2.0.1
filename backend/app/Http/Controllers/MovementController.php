@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Movement;
-use App\Models\Account;    // ДОДАЙ ЦЕ
-use App\Models\Card;       // ДОДАЙ ЦЕ
-use App\Models\Tag;        // ДОДАЙ ЦЕ
+use App\Models\Account;
+use App\Models\Card;
+use App\Models\Envelope;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MovementController extends Controller
 {
@@ -17,17 +19,13 @@ class MovementController extends Controller
      */
     public function index(Request $request, Account $account)
     {
-        // 1. Seguridad: ¿La cuenta es del usuario?
         if ($account->user_id !== Auth::id()) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        // 2. Query base
-        $query = $account->movements()->with('tag'); // Traemos la etiqueta asociada si existe
+        $query = $account->movements()->with('tags');
 
-        // 3. Filtros opcionales (Ingresos vs Gastos)
         if ($request->has('type')) {
-            // Asumiendo que guardas montos negativos para gastos y positivos para ingresos
             if ($request->type === 'income') {
                 $query->where('amount', '>', 0);
             } elseif ($request->type === 'expense') {
@@ -35,9 +33,8 @@ class MovementController extends Controller
             }
         }
 
-        // 4. Ordenar y Paginar
-        $movements = $query->orderBy('date', 'desc') // O 'created_at'
-                           ->limit(50) // Limitamos a 50 para no saturar
+        $movements = $query->orderBy('date', 'desc')
+                           ->limit(50)
                            ->get();
 
         return response()->json($movements);
@@ -52,117 +49,194 @@ class MovementController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Get all movements for the authenticated user.
      */
     public function all(Request $request)
     {
-        // Отримати всі movimientos користувача
         $user = Auth::user();
-        
-        $query = Movement::whereHas('account', function($q) use ($user) {
+
+        $query = Movement::whereHas('account', function ($q) use ($user) {
             $q->where('user_id', $user->id);
         })->with(['account', 'card', 'tags']);
-        
-        // Фільтр по картці
+
         if ($request->has('card_id')) {
-            $query->where('card_id', $request->card_id);
+            $cardId = $request->input('card_id');
+            // Verificar que la card pertenece al usuario
+            $validCard = Card::where('id', $cardId)
+                ->whereHas('account', fn($q) => $q->where('user_id', $user->id))
+                ->exists();
+            if ($validCard) {
+                $query->where('card_id', $cardId);
+            }
         }
-        
-        $movements = $query->orderBy('date', 'desc')->get();
-        
+
+        $movements = $query->orderBy('date', 'desc')->limit(100)->get();
+
         return response()->json($movements);
     }
 
-    // У методі store() заміни цей блок:
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
-        Log::info('=== MOVEMENT STORE START ===');
-        Log::info('Request data:', $request->all());
-        
-        try {
-            // 1. Валідація / Validación
-            $validated = $request->validate([
-                'card_id' => 'required|exists:cards,id',
-                'amount' => 'required|numeric',
-                'description' => 'required|string|max:255',
-                'date' => 'required|date',
-                'type' => 'required|in:gasto,ingreso,traspaso',
-                'tag_id' => 'nullable|exists:tags,id',
-                'envelope_id' => 'nullable|exists:envelopes,id' // 🇺🇦 ДОДАНО ПІДТРИМКУ КОНВЕРТІВ / 🇪🇸 AÑADIDO SOPORTE PARA SOBRES
-            ]);
-            
-            Log::info('Validation passed:', $validated);
-            
-            // 2. Отримати картку та рахунок / Obtener tarjeta y cuenta
+        $type = $request->input('type');
+
+        // Validación base común
+        $rules = [
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'required|string|max:255',
+            'date' => 'required|date',
+            'type' => 'required|in:gasto,ingreso,traspaso',
+            'tag_id' => 'nullable|exists:tags,id',
+            'envelope_id' => 'nullable|exists:envelopes,id',
+        ];
+
+        // Validación condicional según tipo
+        if ($type === 'gasto') {
+            $rules['card_id'] = 'required|exists:cards,id';
+        } elseif ($type === 'ingreso') {
+            $rules['account_id'] = 'required|exists:accounts,id';
+            $rules['card_id'] = 'nullable|exists:cards,id';
+        } elseif ($type === 'traspaso') {
+            $rules['account_id'] = 'required|exists:accounts,id';
+            $rules['destination_type'] = 'required|in:own_account,external_iban';
+            $rules['destination_account_id'] = 'required_if:destination_type,own_account|nullable|exists:accounts,id';
+            $rules['destination_iban'] = 'required_if:destination_type,external_iban|nullable|string|max:34';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Determinar la cuenta origen
+        if ($type === 'gasto') {
             $card = Card::findOrFail($validated['card_id']);
-            $account = $card->account; // Отримуємо рахунок напряму з картки
-            
-            // 3. Перевірити, чи картка належить користувачеві / Comprobar si la tarjeta es del usuario
-            if ($account->user_id !== Auth::id()) {
-                Log::warning('Unauthorized movement creation attempt');
+            $account = $card->account;
+        } else {
+            $account = Account::findOrFail($validated['account_id']);
+        }
+
+        if ($account->user_id !== Auth::id()) {
+            return response()->json([
+                'message' => 'No autorizado para realizar esta acción'
+            ], 403);
+        }
+
+        // Para traspasos internos, verificar cuenta destino
+        if ($type === 'traspaso' && $validated['destination_type'] === 'own_account') {
+            $destinationAccount = Account::findOrFail($validated['destination_account_id']);
+            if ($destinationAccount->user_id !== Auth::id()) {
                 return response()->json([
-                    'message' => 'No autorizado para realizar esta acción'
+                    'message' => 'La cuenta destino no te pertenece'
                 ], 403);
             }
-            
-            // 4. Розрахунок суми (якщо це gasto, робимо від'ємним) / Cálculo de la cantidad
-            $amount = $validated['amount'];
-            if ($validated['type'] === 'gasto') {
-                $amount = -abs($amount);
+            if ($destinationAccount->id === $account->id) {
+                return response()->json([
+                    'message' => 'La cuenta origen y destino no pueden ser la misma'
+                ], 422);
             }
-            
-            // 5. Створити movement в БД / Crear movement en BD
-            $movement = Movement::create([
-                'account_id' => $account->id,
-                'card_id' => $validated['card_id'],
-                'envelope_id' => $validated['envelope_id'] ?? null, // 🇺🇦 Зберігаємо конверт, якщо він є
-                'amount' => $amount,
-                'description' => $validated['description'],
-                'date' => $validated['date'],
-                'type' => $validated['type']
+        }
+
+        // Verificar que el envelope pertenece al usuario autenticado
+        if (!empty($validated['envelope_id'])) {
+            $envelope = Envelope::find($validated['envelope_id']);
+            if (!$envelope || $envelope->account->user_id !== Auth::id()) {
+                return response()->json([
+                    'message' => 'El sobre seleccionado no pertenece a tus cuentas'
+                ], 403);
+            }
+        }
+
+        try {
+            $movement = DB::transaction(function () use ($validated, $account, $type) {
+                $amount = abs($validated['amount']);
+
+                if ($type === 'gasto') {
+                    // Gasto: 1 movimiento negativo, balance baja
+                    $movement = Movement::create([
+                        'account_id' => $account->id,
+                        'card_id' => $validated['card_id'],
+                        'envelope_id' => $validated['envelope_id'] ?? null,
+                        'amount' => -$amount,
+                        'description' => $validated['description'],
+                        'date' => $validated['date'],
+                        'type' => 'gasto',
+                    ]);
+                    $account->current_balance -= $amount;
+                    $account->save();
+
+                } elseif ($type === 'ingreso') {
+                    // Ingreso: 1 movimiento positivo, balance sube
+                    $movement = Movement::create([
+                        'account_id' => $account->id,
+                        'card_id' => $validated['card_id'] ?? null,
+                        'envelope_id' => $validated['envelope_id'] ?? null,
+                        'amount' => $amount,
+                        'description' => $validated['description'],
+                        'date' => $validated['date'],
+                        'type' => 'ingreso',
+                    ]);
+                    $account->current_balance += $amount;
+                    $account->save();
+
+                } elseif ($type === 'traspaso') {
+                    // Débito en cuenta origen
+                    $movement = Movement::create([
+                        'account_id' => $account->id,
+                        'card_id' => null,
+                        'envelope_id' => $validated['envelope_id'] ?? null,
+                        'amount' => -$amount,
+                        'description' => $validated['description'],
+                        'date' => $validated['date'],
+                        'type' => 'traspaso',
+                    ]);
+                    $account->current_balance -= $amount;
+                    $account->save();
+
+                    // Traspaso interno: crédito en cuenta destino
+                    if ($validated['destination_type'] === 'own_account') {
+                        $destinationAccount = Account::findOrFail($validated['destination_account_id']);
+                        Movement::create([
+                            'account_id' => $destinationAccount->id,
+                            'card_id' => null,
+                            'envelope_id' => null,
+                            'amount' => $amount,
+                            'description' => 'Traspaso recibido: ' . $validated['description'],
+                            'date' => $validated['date'],
+                            'type' => 'traspaso',
+                        ]);
+                        $destinationAccount->current_balance += $amount;
+                        $destinationAccount->save();
+                    }
+                    // Traspaso externo: solo el débito (ya creado arriba)
+                }
+
+                // Asociar tag si existe
+                if (!empty($validated['tag_id'])) {
+                    $movement->tags()->syncWithoutDetaching([$validated['tag_id']]);
+                }
+
+                return $movement;
+            });
+
+            $movement->load('tags', 'account', 'card', 'envelope');
+
+            return response()->json([
+                'message' => 'Movimiento creado y balance actualizado correctamente',
+                'movement' => $movement,
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Movement creation error', [
+                'user_id' => Auth::id(),
+                'exception' => $e->getMessage(),
             ]);
 
-            // ==========================================
-            // 🇺🇦 6. МАГІЯ: ОНОВЛЕННЯ БАЛАНСУ РАХУНКУ
-            // 🇪🇸 6. MAGIA: ACTUALIZACIÓN DEL SALDO DE LA CUENTA
-            // ==========================================
-            
-            // Перевіряємо, чи існує поле current_balance (якщо в базі воно називається balance, зміни на balance)
-            if ($validated['type'] === 'ingreso') {
-                $account->current_balance += abs($amount); // Додаємо доходи
-            } else if ($validated['type'] === 'gasto') {
-                $account->current_balance -= abs($amount); // Віднімаємо витрати
-            }
-            
-            $account->save(); // ЗБЕРІГАЄМО ОНОВЛЕНИЙ БАЛАНС!
-            Log::info('Account balance updated to: ' . $account->current_balance);
-            // ==========================================
-            
-            // 7. Додати тег, якщо є / Añadir tag si existe
-            if (!empty($validated['tag_id'])) {
-                $movement->tags()->attach($validated['tag_id']);
-            }
-            
-            // 8. Завантажити зв'язки / Cargar relaciones
-            $movement->load('tags', 'account', 'card', 'envelope');
-            
-            Log::info('Movement created successfully:', $movement->toArray());
-            
             return response()->json([
-                'message' => '✅ Movimiento creado y balance actualizado correctamente',
-                'movement' => $movement
-            ], 201);
-            
-        } catch (\Exception $e) {
-            Log::error('Movement error: ' . $e->getMessage());
-            Log::error('Trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'message' => '❌ Error: ' . $e->getMessage(),
-                'error' => $e->getMessage()
+                'message' => 'Error al crear el movimiento',
             ], 500);
         }
     }
+
     /**
      * Display the specified resource.
      */

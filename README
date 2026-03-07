@@ -78,3 +78,27 @@ docker compose exec backend npm install
 
 # Compilar archivos para producción
 docker compose exec backend npm run build
+
+
+
+                                                                                                                                                 
+  MySQL (docker-compose.yml + .env)
+
+  Las credenciales se configuran mediante variables de entorno.
+  Copia el archivo .env.docker.example a .env.docker y rellena los valores:
+
+  ┌──────────────────────┬────────────────────────────────┐
+  │ Variable             │ Descripcion                    │
+  ├──────────────────────┼────────────────────────────────┤
+  │ MYSQL_ROOT_PASSWORD  │ Password del usuario root      │
+  ├──────────────────────┼────────────────────────────────┤
+  │ MYSQL_USER           │ Usuario de la app              │
+  ├──────────────────────┼────────────────────────────────┤
+  │ MYSQL_PASSWORD       │ Password del usuario app       │
+  ├──────────────────────┼────────────────────────────────┤
+  │ MYSQL_DATABASE       │ Nombre de la base de datos     │
+  ├──────────────────────┼────────────────────────────────┤
+  │ ALPHAVANTAGE_API_KEY │ Tu clave de Alpha Vantage      │
+  └──────────────────────┴────────────────────────────────┘
+
+  IMPORTANTE: Nunca subas credenciales reales al repositorio.

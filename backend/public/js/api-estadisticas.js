@@ -1,4 +1,6 @@
-const API_KEY = "FA9T1C5SSBLYGSU6"; // Tu clave real de Alpha Vantage
+// API key movida al backend por seguridad — las llamadas pasan por /api/stocks/quote
+(function() {
+'use strict';
 
 // ==========================================
 // 1. CONFIGURACIÓN Y DATOS (Historia estática para gráficos)
@@ -31,78 +33,21 @@ const etfData = {
 let charts = {}; // Para guardar las instancias de los gráficos
 let currentTimeframe = "1D";
 
-// Elemento del DOM
-const userAvatarTop = document.querySelector(".user-avatar-top");
-
-// 1. ESTADO DE CARGA (Spinner)
-userAvatarTop.innerHTML = `
-<div style="text-align: center; padding: 40px; color: var(--color-gray-500);">
-    <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
-</div>`;
-/**
-* Carga el usuario logueado y actualiza el avatar
-*/
-async function loadUserProfile() {
-    console.log("Cargando perfil de usuario...");
-
-    try {
-        // Petición estándar a Laravel para obtener el usuario autenticado
-        const response = await fetch("/api/user", {
-            headers: { Accept: "application/json" },
-            credentials: "same-origin",
-        });
-
-        if (response.ok) {
-            const user = await response.json();
-            // Asumimos que tu tabla users tiene una columna 'name'
-            updateAvatarUI(user.name);
-        }
-    } catch (error) {
-        console.error("Error cargando usuario:", error);
-        showNotification("Error cargando perfil de usuario", "error");
-    }
-}
-
-/**
- * Calcula las iniciales y actualiza el círculo del header
- * Ej: "Juan Pérez" -> "JP"
- */
-function updateAvatarUI(fullName) {
-    if (!userAvatarTop || !fullName) return;
-
-    // Dividimos el nombre por espacios
-    const parts = fullName.trim().split(" ");
-
-    // Tomamos la primera letra del primer nombre
-    let initials = parts[0].charAt(0).toUpperCase();
-
-    // Si hay apellido (o segundo nombre), tomamos su inicial también
-    if (parts.length > 1) {
-        initials += parts[parts.length - 1].charAt(0).toUpperCase();
-    }
-
-    userAvatarTop.textContent = initials;
-    // Opcional: poner el nombre completo en el título al pasar el ratón
-    userAvatarTop.title = fullName;
-}
-
 // ==========================================
 // 2. INICIALIZACIÓN
 // ==========================================
-document.addEventListener("DOMContentLoaded", async () => {
+(async function initEstadisticas() {
     console.log("🚀 Iniciando sistema híbrido: APIs + Gráficos...");
 
     // 1. Inicializar Gráficos (Estáticos por diseño)
     createAllCharts();
     setupTimeButtons();
     updateCurrentDate();
-    loadUserProfile();
-    
+
     // 2. Cargar Datos Vivos (APIs)
     await cargarTiempolrun();
     await actualizarPreciosHibrido();
-    await updateAvatarUI();
-});
+})();
 
 // ==========================================
 // 3. API METEOROLÓGICA (Open-Meteo)
@@ -124,10 +69,16 @@ async function cargarTiempolrun() {
                 contenedorPadre.insertBefore(widget, contenedorPadre.firstChild);
             }
             
-            const temp = data.current.temperature_2m;
-            // Icono simple basado en si hace sol o no
+            const temp = parseFloat(data.current.temperature_2m) || 0;
             const icono = data.current.weather_code <= 3 ? 'fa-sun' : 'fa-cloud';
-            widget.innerHTML = `<i class="fas ${icono}"></i> <span>${temp}°C Irún</span>`;
+            widget.textContent = '';
+            const icon = document.createElement('i');
+            icon.className = `fas ${icono}`;
+            const span = document.createElement('span');
+            span.textContent = `${temp}°C Irun`;
+            widget.appendChild(icon);
+            widget.appendChild(document.createTextNode(' '));
+            widget.appendChild(span);
         }
     } catch (e) {
         console.error("Error al cargar el clima", e);
@@ -145,8 +96,8 @@ async function actualizarPreciosHibrido() {
         const symbol = simbolosAPI[idHTML];
 
         try {
-            // URL real de Alpha Vantage
-            const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY}`;
+            // Proxy al backend — la API key se maneja en el servidor
+            const url = `/api/stocks/quote?symbol=${symbol}`;
             
             // Throttling para no saturar la API gratuita
             await new Promise((r) => setTimeout(r, 1200)); 
@@ -312,3 +263,5 @@ function updateCurrentDate() {
         dateEl.textContent = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
     }
 }
+
+})(); // Fin IIFE api-estadisticas.js

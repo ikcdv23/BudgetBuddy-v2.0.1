@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
     console.log('✅ Ajustes en modo Blade cargado.');
 
     // 1. REFERENCIAS
@@ -65,4 +65,4 @@ document.addEventListener('DOMContentLoaded', function() {
     if (changePasswordBtn) changePasswordBtn.addEventListener('click', () => openModal(passwordModal));
     if (closePasswordModal) closePasswordModal.addEventListener('click', () => closeModal(passwordModal));
     if (cancelPasswordBtn) cancelPasswordBtn.addEventListener('click', () => closeModal(passwordModal));
-});
+})();

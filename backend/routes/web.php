@@ -4,10 +4,10 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
-// 1. Redirecciones públicas
+// 1. Landing page (pública)
 Route::get('/', function () {
-    return redirect()->route('login');
-});
+    return view('landing');
+})->name('landing');
 
 Route::get('/accesibilidad', function () {
     return view('accesibilidad');
@@ -29,7 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return redirect()->route('desktop.index');
     })->name('dashboard');
 
-    // Vistas Setup y Desktop
+    // Setup wizard
     Route::get('/setup', function () {
         if (Auth::user()->accounts()->count() > 0) {
             return redirect()->route('dashboard');
@@ -37,15 +37,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('setup');
     })->name('setup.view');
 
-    Route::get('/desktop', function () {
-        return view('desktop');
-    })->name('desktop.index');
+    // Páginas principales de la app
+    Route::get('/desktop', fn() => view('desktop', ['currentPage' => 'desktop']))->name('desktop.index');
+    Route::get('/misTarjetas', fn() => view('misTarjetas', ['currentPage' => 'misTarjetas']))->name('tarjetas.index');
+    Route::get('/estadisticas', fn() => view('estadisticas', ['currentPage' => 'estadisticas']))->name('estadisticas.index');
 
-
-    // --- AQUÍ ESTÁ EL CAMBIO DE LA OPCIÓN A ---
-    // Usamos '/profile' para todo. 
-    // Si entras por navegador -> Verás la vista de ajustes.
-    // Si entra el JS -> Recibirá JSON.
+    // Perfil / Ajustes
     Route::get('/ajustes', [ProfileController::class, 'show'])->name('profile.view');
     Route::put('/ajustes', [ProfileController::class, 'update'])->name('profile.update');
 });

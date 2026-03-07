@@ -9,7 +9,7 @@ services:
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - frontend
+      - backend
     networks:
       - budgetbuddy_net
 
@@ -20,51 +20,39 @@ services:
       dockerfile: Dockerfile
     container_name: budgetbuddy-backend
     restart: unless-stopped
-    # SIN PORTS (Requisito del enunciado)
-    #ports:
-    #- "8000:8000"  # Для тестування API
-    #- "9000:9000"  # Для php-fpm (якщо потрібно)
     volumes:
       - ./backend:/var/www/html
-
+    expose:
+      - "8000"
+    depends_on:
+      - db
     networks:
       - budgetbuddy_net
 
-  # --- SERVICIO 3: FRONTEND (Oculto en la red interna) ---
-  frontend:
-    build:
-      context: ./frontend # <--- La carpeta real
-      dockerfile: Dockerfile # <--- Tu archivo con Node
-    container_name: frontend
-    volumes:
-      - ./frontend:/app # <--- Sincroniza tu código
-      - /app/node_modules # <--- Protege las librerías de Linux
-    ports: # <--- IMPORTANTE: Si usas Vite/Node
-      - "5173:5173" # <--- Puerto de desarrollo (no el 80)
-    networks:
-      - budgetbuddy_net
-
-  #   # --- SERVICIO 4: BASE DE DATOS ---
+  # --- SERVICIO 3: BASE DE DATOS ---
   db:
     image: mysql:8.0
     container_name: budgetbuddy-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: budgetbuddy
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme_root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-budgetbuddy}
+      MYSQL_USER: ${MYSQL_USER:-budgetbuddy_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-changeme_app}
     networks:
       - budgetbuddy_net
 
-  # --- SERVICIO 5: PHPMYADMIN (Gestor Visual) ---
+  # --- SERVICIO 4: PHPMYADMIN (Solo desarrollo local - NO exponer en produccion) ---
+  # SEGURIDAD: Restringido a localhost unicamente
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: budgetbuddy-pma
-    restart: always
+    restart: unless-stopped
     ports:
-      - "8080:80" # Accederemos por el puerto 8080 para no chocar con Nginx
+      - "127.0.0.1:8080:80" # Solo accesible desde localhost
     environment:
-      PMA_HOST: db # <--- ¡CLAVE! Dice: "Conéctate al contenedor llamado 'db'"
-      MYSQL_ROOT_PASSWORD: root # La misma pass que pusiste en el servicio db
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme_root}
     depends_on:
       - db
     networks:

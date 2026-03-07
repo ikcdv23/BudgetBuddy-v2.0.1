@@ -1,12 +1,8 @@
 // desktop.js
+(function() {
+'use strict';
 
-// ========== FUNCIONES AUXILIARES GENERALES ==========
-function getCookie(name) {
-	const value = `; ${document.cookie}`;
-	const parts = value.split(`; ${name}=`);
-	if (parts.length === 2)
-		return decodeURIComponent(parts.pop().split(";").shift());
-}
+// escapeHTML, getCookie, formatDate -> app-base.js
 
 function hexToRgb(hex) {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -15,76 +11,6 @@ function hexToRgb(hex) {
 	const g = parseInt(result[2], 16);
 	const b = parseInt(result[3], 16);
 	return `${r}, ${g}, ${b}`;
-}
-
-function formatDate(dateString) {
-	try {
-		const date = new Date(dateString);
-		return date.toLocaleDateString("es-ES", {
-			day: "numeric",
-			month: "short",
-			year: "numeric",
-		});
-	} catch (e) {
-		return dateString;
-	}
-}
-
-// ========== GESTIÓN DE PERFIL DE USUARIO ==========
-
-// Elemento del DOM
-const userAvatarTop = document.querySelector(".user-avatar-top");
-
-// 1. ESTADO DE CARGA (Spinner)
-userAvatarTop.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--color-gray-500);">
-            <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
-        </div>`;
-/**
- * Carga el usuario logueado y actualiza el avatar
- */
-async function loadUserProfile() {
-	console.log("Cargando perfil de usuario...");
-
-	try {
-		// Petición estándar a Laravel para obtener el usuario autenticado
-		const response = await fetch("/api/user", {
-			headers: { Accept: "application/json" },
-			credentials: "same-origin",
-		});
-
-		if (response.ok) {
-			const user = await response.json();
-			// Asumimos que tu tabla users tiene una columna 'name'
-			updateAvatarUI(user.name);
-		}
-	} catch (error) {
-		console.error("Error cargando usuario:", error);
-		showNotification("Error cargando perfil de usuario", "error");
-	}
-}
-
-/**
- * Calcula las iniciales y actualiza el círculo del header
- * Ej: "Juan Pérez" -> "JP"
- */
-function updateAvatarUI(fullName) {
-	if (!userAvatarTop || !fullName) return;
-
-	// Dividimos el nombre por espacios
-	const parts = fullName.trim().split(" ");
-
-	// Tomamos la primera letra del primer nombre
-	let initials = parts[0].charAt(0).toUpperCase();
-
-	// Si hay apellido (o segundo nombre), tomamos su inicial también
-	if (parts.length > 1) {
-		initials += parts[parts.length - 1].charAt(0).toUpperCase();
-	}
-
-	userAvatarTop.textContent = initials;
-	// Opcional: poner el nombre completo en el título al pasar el ratón
-	userAvatarTop.title = fullName;
 }
 
 // ========== GESTIÓN DE CUENTAS BANCARIAS (Lógica Real) ==========
@@ -169,6 +95,9 @@ function renderGoals(goals) {
 
 		// Usamos tu estructura HTML exacta
 		// Nota: Inyectamos la variable CSS --progress inline para que funcione el círculo
+		const safeGoalName = escapeHTML(goal.name);
+		const safeGoalIcon = escapeHTML(goal.icon || "fas fa-bullseye");
+
 		goalItem.innerHTML = `
             <div class="goal-left">
                 <div class="goal-progress">
@@ -182,10 +111,9 @@ function renderGoals(goals) {
                     <div class="progress-text">${percentage}%</div>
                 </div>
                 <div class="goal-info">
-                    <h4>${goal.name}</h4>
+                    <h4>${safeGoalName}</h4>
                     <div class="goal-date" style="font-size: 0.8rem; color: #9ca3af">
-                        <i class="${goal.icon || "fas fa-bullseye"
-			}"></i> Meta Activa
+                        <i class="${safeGoalIcon}"></i> Meta Activa
                     </div>
                 </div>
             </div>
@@ -393,16 +321,16 @@ function renderMockCards(container) {
 		// HTML interno (Estructura Wallet)
 		cardEl.innerHTML = `
             <div class="mini-card-top">
-                <span style="font-weight: 500; font-size: 0.9rem">${card.alias}</span>
-                <i class="fab fa-cc-${card.type}" style="font-size: 1.5rem"></i>
+                <span style="font-weight: 500; font-size: 0.9rem">${escapeHTML(card.alias)}</span>
+                <i class="fab fa-cc-${escapeHTML(card.type)}" style="font-size: 1.5rem"></i>
             </div>
             <div class="mini-card-number">
-                **** **** **** ${card.number}
+                **** **** **** ${escapeHTML(card.number)}
             </div>
             <div class="mini-card-bottom">
                 <div>
                     <div style="font-size: 0.7rem; opacity: 0.8">Saldo</div>
-                    <div style="font-weight: bold">${card.balance}€</div>
+                    <div style="font-weight: bold">${escapeHTML(card.balance)}€</div>
                 </div>
                 <div style="font-size: 0.7rem">Exp: 12/28</div>
             </div>
@@ -504,17 +432,17 @@ function renderCards(container, cards) {
 
 		cardEl.innerHTML = `
             <div class="mini-card-top">
-                <span style="font-weight: 500; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${card.alias
+                <span style="font-weight: 500; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">${escapeHTML(card.alias)
 			}</span>
-                <i class="fab fa-cc-${visualType}" style="font-size: 1.8rem; opacity: 0.9;"></i>
+                <i class="fab fa-cc-${escapeHTML(visualType)}" style="font-size: 1.8rem; opacity: 0.9;"></i>
             </div>
             <div class="mini-card-number">
-                **** **** **** ${card.last_4_digits || "0000"}
+                **** **** **** ${escapeHTML(card.last_4_digits || "0000")}
             </div>
             <div class="mini-card-bottom">
                 <div style="text-align: right;">
                     <div style="font-size: 0.6rem; opacity: 0.7;">Expira</div>
-                    <div style="font-size: 0.8rem">${expDateFormatted}</div>
+                    <div style="font-size: 0.8rem">${escapeHTML(expDateFormatted)}</div>
                 </div>
             </div>
         `;
@@ -784,16 +712,20 @@ function renderTags(tags) {
 		tagElement.setAttribute("data-id", tag.id.toString());
 		tagElement.style.setProperty("--tag-color", tag.color);
 
+		const safeTagColor = escapeHTML(tag.color);
+		const safeTagIcon = escapeHTML(tag.icon || "tag");
+		const safeTagName = escapeHTML(tag.name);
+
 		tagElement.innerHTML = `
             <div class="tag-icon" style="background-color: rgba(${hexToRgb(
 			tag.color,
-		)}, 0.1); color: ${tag.color};">
-                <i class="fas fa-${tag.icon || "tag"}"></i>
+		)}, 0.1); color: ${safeTagColor};">
+                <i class="fas fa-${safeTagIcon}"></i>
             </div>
             <div class="tag-info">
-                <h3>${tag.name}</h3>
+                <h3>${safeTagName}</h3>
                 <p>${tag.created_at
-				? "Creada: " + formatDate(tag.created_at)
+				? "Creada: " + escapeHTML(formatDate(tag.created_at))
 				: "Etiqueta"
 			}</p>
             </div>
@@ -1290,9 +1222,13 @@ async function saveNewAccount(e) {
 	saveAccountBtn.innerHTML =
 		'<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
+	const countrySelect = document.getElementById("acc-iban-country");
+	const countryCode = countrySelect ? countrySelect.value : "ES";
+	const ibanDigits = accIbanInput.value.replace(/\s+/g, '');
+
 	const newAccountData = {
 		bank_name: accNameInput.value,
-		iban: accIbanInput.value,
+		iban: countryCode + ibanDigits,
 		current_balance: parseFloat(accBalanceInput.value),
 		color: selectedAccColor,
 	};
@@ -1333,33 +1269,200 @@ async function saveNewAccount(e) {
 	}
 }
 
-// ========== NOTIFICACIONES ==========
+// ========== GESTIÓN MODAL TRASPASO ==========
 
-function showNotification(message, type) {
-	// (Tu función de notificaciones original, resumida aquí para no ocupar espacio pero mantenla igual)
-	const notification = document.createElement("div");
-	notification.className = `notification ${type}`;
-	notification.innerHTML = `<div class="notification-content"><span>${message}</span></div>`;
-	notification.style.cssText = `position: fixed; top: 100px; right: 20px; background: ${type === "error" ? "#ef4444" : "#10b981"
-		}; color: white; padding: 12px; border-radius: 8px; z-index: 9999;`;
-	document.body.appendChild(notification);
-	setTimeout(() => notification.remove(), 3000);
+const transferModal = document.getElementById("transfer-modal");
+const openTransferBtn = document.getElementById("open-transfer-modal-btn");
+const closeTransferBtn = document.getElementById("close-transfer-modal-btn");
+const cancelTransferBtn = document.getElementById("cancel-transfer-btn");
+const saveTransferBtn = document.getElementById("save-transfer-btn");
+const transferOriginSelect = document.getElementById("transfer-origin-account");
+const transferDestSelect = document.getElementById("transfer-dest-account");
+const transferDestAccountGroup = document.getElementById("transfer-dest-account-group");
+const transferDestIbanGroup = document.getElementById("transfer-dest-iban-group");
+const transferDestIbanInput = document.getElementById("transfer-dest-iban");
+
+if (closeTransferBtn) closeTransferBtn.addEventListener("click", () => transferModal.close());
+if (cancelTransferBtn) cancelTransferBtn.addEventListener("click", () => transferModal.close());
+
+function populateTransferSelects() {
+	if (!transferOriginSelect) return;
+	transferOriginSelect.innerHTML = '<option value="">Seleccionar cuenta...</option>';
+	if (transferDestSelect) {
+		transferDestSelect.innerHTML = '<option value="">Seleccionar cuenta...</option>';
+	}
+
+	for (const [id, acc] of Object.entries(accountsData)) {
+		const opt1 = document.createElement("option");
+		opt1.value = id;
+		const shortIban = acc.iban ? acc.iban.slice(-4) : "????";
+		opt1.textContent = `${acc.bankName} - **** ${shortIban}`;
+		transferOriginSelect.appendChild(opt1);
+
+		if (transferDestSelect) {
+			const opt2 = document.createElement("option");
+			opt2.value = id;
+			opt2.textContent = `${acc.bankName} - **** ${shortIban}`;
+			transferDestSelect.appendChild(opt2);
+		}
+	}
+
+	// Pre-seleccionar la cuenta actual del dashboard como origen
+	const currentAccountId = accountSelect ? accountSelect.value : null;
+	if (currentAccountId) {
+		transferOriginSelect.value = currentAccountId;
+		updateTransferDestOptions(currentAccountId);
+	}
+}
+
+function updateTransferDestOptions(excludeId) {
+	if (!transferDestSelect) return;
+	transferDestSelect.innerHTML = '<option value="">Seleccionar cuenta...</option>';
+	for (const [id, acc] of Object.entries(accountsData)) {
+		if (id === excludeId) continue;
+		const opt = document.createElement("option");
+		opt.value = id;
+		const shortIban = acc.iban ? acc.iban.slice(-4) : "????";
+		opt.textContent = `${acc.bankName} - **** ${shortIban}`;
+		transferDestSelect.appendChild(opt);
+	}
+}
+
+if (transferOriginSelect) {
+	transferOriginSelect.addEventListener("change", function () {
+		const destType = document.querySelector('input[name="transfer_dest_type"]:checked');
+		if (destType && destType.value === "own_account") {
+			updateTransferDestOptions(this.value);
+		}
+	});
+}
+
+// Toggle destino: cuenta propia vs IBAN externo
+document.querySelectorAll('input[name="transfer_dest_type"]').forEach(radio => {
+	radio.addEventListener("change", function () {
+		if (this.value === "own_account") {
+			if (transferDestAccountGroup) transferDestAccountGroup.style.display = "";
+			if (transferDestIbanGroup) transferDestIbanGroup.style.display = "none";
+			updateTransferDestOptions(transferOriginSelect ? transferOriginSelect.value : null);
+		} else {
+			if (transferDestAccountGroup) transferDestAccountGroup.style.display = "none";
+			if (transferDestIbanGroup) transferDestIbanGroup.style.display = "";
+		}
+	});
+});
+
+function openTransferModal() {
+	document.getElementById("transfer-form").reset();
+	// Reset radios
+	const ownRadio = document.querySelector('input[name="transfer_dest_type"][value="own_account"]');
+	if (ownRadio) ownRadio.checked = true;
+	if (transferDestAccountGroup) transferDestAccountGroup.style.display = "";
+	if (transferDestIbanGroup) transferDestIbanGroup.style.display = "none";
+
+	populateTransferSelects();
+	transferModal.showModal();
+}
+
+if (openTransferBtn) {
+	openTransferBtn.addEventListener("click", openTransferModal);
+}
+
+if (saveTransferBtn) {
+	saveTransferBtn.addEventListener("click", async (e) => {
+		e.preventDefault();
+
+		const originId = transferOriginSelect ? transferOriginSelect.value : "";
+		const amount = parseFloat(document.getElementById("transfer-amount").value);
+		const description = document.getElementById("transfer-description").value;
+		const destType = document.querySelector('input[name="transfer_dest_type"]:checked').value;
+
+		if (!originId || !amount || isNaN(amount) || !description) {
+			showNotification("Rellena todos los campos obligatorios", "error");
+			return;
+		}
+
+		const payload = {
+			type: "traspaso",
+			account_id: parseInt(originId),
+			amount: Math.abs(amount),
+			description: description,
+			date: new Date().toISOString().split("T")[0],
+			destination_type: destType,
+		};
+
+		if (destType === "own_account") {
+			const destId = transferDestSelect ? transferDestSelect.value : "";
+			if (!destId) {
+				showNotification("Selecciona una cuenta de destino", "error");
+				return;
+			}
+			payload.destination_account_id = parseInt(destId);
+		} else {
+			const iban = transferDestIbanInput ? transferDestIbanInput.value.trim() : "";
+			if (!iban) {
+				showNotification("Introduce el IBAN de destino", "error");
+				return;
+			}
+			payload.destination_iban = iban;
+		}
+
+		const originalText = saveTransferBtn.innerHTML;
+		saveTransferBtn.disabled = true;
+		saveTransferBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
+		try {
+			await fetch("/sanctum/csrf-cookie");
+			const response = await fetch("/api/movements", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Accept: "application/json",
+					"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
+				},
+				credentials: "same-origin",
+				body: JSON.stringify(payload),
+			});
+
+			if (response.ok) {
+				transferModal.close();
+				showNotification("Traspaso realizado correctamente", "success");
+				loadAccountsFromServer();
+			} else {
+				const data = await response.json();
+				const errorMsg = data.errors
+					? Object.values(data.errors).flat().join(", ")
+					: data.message || "Error al realizar el traspaso";
+				showNotification(errorMsg, "error");
+			}
+		} catch (error) {
+			console.error("Transfer error:", error);
+			showNotification("Error de conexión", "error");
+		} finally {
+			saveTransferBtn.disabled = false;
+			saveTransferBtn.innerHTML = originalText;
+		}
+	});
 }
 
 // ========== INICIALIZACIÓN PRINCIPAL ==========
 
-document.addEventListener("DOMContentLoaded", function () {
+// Exponer funciones usadas desde onclick inline en el HTML
+window.openGoalModal = openGoalModal;
+window.loadGoalsFromServer = loadGoalsFromServer;
+window.openAddCardModal = openAddCardModal;
+
+(function initDesktop() {
 	console.log("Desktop.js cargado e iniciando...");
 
 	initAccountElements();
 
 	loadAccountsFromServer();
 
-	loadUserProfile();
-
 	loadGoalsFromServer();
 
 	loadTagsFromServer();
 
 	setTimeout(initializeDragAndDrop, 500);
-});
+})();
+
+})(); // Fin IIFE desktop.js

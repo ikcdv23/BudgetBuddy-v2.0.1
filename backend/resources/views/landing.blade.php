@@ -2,13 +2,14 @@
 <html lang="es">
 	<head>
 		<meta charset="UTF-8" />
-		<link rel="icon" type="image/svg+xml" href="/logo_budget.png" />
+		<link rel="icon" type="image/png" href="{{ asset('images/logo_budget.png') }}" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="csrf-token" content="{{ csrf_token() }}">
 		<link
 			rel="stylesheet"
 			href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 		/>
-		<link rel="stylesheet" href="./src/css/style.css" />
+		<link rel="stylesheet" href="{{ asset('css/landing.css') }}" />
 		<title>BudgetBuddy | Tu control de gastos</title>
 		<meta
 			name="description"
@@ -21,7 +22,7 @@
 			<div class="container header-content">
 				<div class="logo-container">
 					<img
-						src="./src/assets/img/logo_budget.png"
+						src="{{ asset('images/logo_budget.png') }}"
 						alt="BudgetBuddy Logo"
 						class="logo-img"
 					/>
@@ -36,7 +37,7 @@
 					</ul>
 				</nav>
 				<!--- NO TOCAR --->
-				<div>
+				<div id="auth-buttons">
 					<button class="btn-login" onclick="location.href = '/login'">
 						Iniciar sesión
 					</button>
@@ -73,7 +74,7 @@
 				<div class="hero-image">
 					<div class="app-img">
 						<img
-							src="./src/assets/img/App-wireframe-removebg-preview.png"
+							src="{{ asset('images/App-wireframe-removebg-preview.png') }}"
 							alt=""
 						/>
 					</div>
@@ -81,7 +82,6 @@
 			</div>
 		</section>
 
-		<!-- Додай цю секцію після секції #hero і перед секцією #features -->
 		<section id="about">
 			<div class="container">
 				<div class="about-content">
@@ -192,7 +192,6 @@
 				</div>
 			</div>
 		</section>
-		<!-- Кінець доданої секції -->
 
 		<section id="features">
 			<div class="container">
@@ -229,7 +228,7 @@
 			</div>
 		</section>
 
-		<!-- Sección de video promocional - Додай після секції #features і перед секцією #contact -->
+		<!-- Sección de video promocional -->
 		<div class="video-container" style="max-width: 800px; margin: 0 auto">
 			<video
 				id="mi-video-promo"
@@ -238,10 +237,10 @@
 				preload="metadata"
 				aria-label="Video promocional de BudgetBuddy"
 			>
-				<source src="./video/Video-budgetbuddy.mp4" type="video/mp4" />
+				<source src="{{ asset('video/Video-budgetbuddy.mp4') }}" type="video/mp4" />
 
 				<track
-					src="./video/subtitulos_es.vtt"
+					src="{{ asset('video/subtitulos_es.vtt') }}"
 					kind="captions"
 					srclang="es"
 					label="Español"
@@ -250,11 +249,12 @@
 
 				<p>
 					Tu navegador no soporta videos HTML5.
-					<a href="rutas/a/tu/video.mp4">Descarga el video aquí</a>.
+					<a href="{{ asset('video/Video-budgetbuddy.mp4') }}">Descarga el video aquí</a>.
 				</p>
 			</video>
 		</div>
-		<!-- Sección Contacto - Додай перед #reviews -->
+
+		<!-- Sección Contacto -->
 		<section id="contact">
 			<div class="container">
 				<div class="contact-content">
@@ -404,9 +404,7 @@
 				</div>
 			</div>
 		</section>
-		<!-- Fin Sección Contacto -->
 
-		<!-- Sección de Reseñas cargadas a traves de una API local en Laravel -->
 		<!--- NO TOCAR --->
 		<section id="reviews">
 			<h2>Lo que dicen nuestros usuarios</h2>
@@ -415,11 +413,9 @@
 			</div>
 		</section>
 		<!--- NO TOCAR --->
-		<!-- Contenido principal del footer -->
 
 		<footer>
 			<div class="container">
-				<!-- Основна частина футера -->
 				<div class="footer-columns">
 					<div class="footer-column">
 						<h4>BudgetBuddy</h4>
@@ -476,7 +472,7 @@
 						</p>
 						<div class="footer-logo">
 							<img
-								src="./src/assets/img/logo_budget.png"
+								src="{{ asset('images/logo_budget.png') }}"
 								alt="BudgetBuddy Logo"
 								class="footer-logo-img"
 							/>
@@ -511,6 +507,6 @@
 				</div>
 			</div>
 		</footer>
-		<script type="module" src="./src/js/main.js"></script>
+		<script src="{{ asset('js/landing.js') }}"></script>
 	</body>
 </html>

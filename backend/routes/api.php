@@ -9,26 +9,23 @@ use App\Http\Controllers\EnvelopeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\MovementController;
+use App\Http\Controllers\StockProxyController;
 
 /*
 |--------------------------------------------------------------------------
 | RUTAS PÚBLICAS (No necesitan login)
 |--------------------------------------------------------------------------
 */
-// Ejemplo: Reviews para la landing page
-Route::get('/reviews', [ReviewController::class, 'index']);
-
-// ¡OJO! Quitamos los Tags de aquí si son personales. 
-// Si son tags globales del sistema (ej: "Comida", "Ocio"), déjalos aquí.
-// Pero si cada usuario crea los suyos, MUÉVELOS ABAJO.
+Route::middleware(['throttle:30,1'])->group(function () {
+    Route::get('/reviews', [ReviewController::class, 'index']);
+});
 
 /*
 |--------------------------------------------------------------------------
 | RUTAS PRIVADAS (Requieren Login - Sanctum)
 |--------------------------------------------------------------------------
-| Todas estas rutas llevan el prefijo /api automáticamente
 */
-Route::middleware(['web', 'auth'])->group(function () {
+Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
 
     // 1. Usuario y Perfil
     Route::get('/user', function (Request $request) {
@@ -38,37 +35,34 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::post('/logout', [ProfileController::class, 'logout']);
 
-    // 2. TAGS (MOVIDO AQUÍ PARA QUE FUNCIONE)
-    // Al estar aquí, Auth::user() ya no será null en el controlador
+    // 2. Tags
     Route::get('/tags', [TagController::class, 'index']);
     Route::post('/tags', [TagController::class, 'store']);
     Route::get('/tags/{tag}', [TagController::class, 'show']);
     Route::put('/tags/{tag}', [TagController::class, 'update']);
     Route::delete('/tags/{tag}', [TagController::class, 'destroy']);
 
-    // 3. Cuentas, Tarjetas y Sobres
+    // 3. Cuentas
     Route::get('/accounts', [AccountController::class, 'index']);
     Route::post('/accounts', [AccountController::class, 'store']);
     Route::get('/accounts/{account}/cards', [AccountController::class, 'getCards']);
 
+    // 4. Tarjetas
+    Route::get('/cards', [CardController::class, 'index']);
     Route::post('/cards', [CardController::class, 'store']);
+    Route::delete('/cards/{card}', [CardController::class, 'destroy']);
 
+    // 5. Sobres / Envelopes
+    Route::get('/envelopes', [EnvelopeController::class, 'index']);
     Route::post('/envelopes', [EnvelopeController::class, 'store']);
     Route::put('/envelopes/{envelope}', [EnvelopeController::class, 'update']);
     Route::delete('/envelopes/{envelope}', [EnvelopeController::class, 'destroy']);
-    Route::get('/envelopes', [EnvelopeController::class, 'index']);
 
+    // 6. Movimientos
     Route::get('/accounts/{account}/movements', [MovementController::class, 'index']);
+    Route::get('/movements', [MovementController::class, 'all']);
+    Route::post('/movements', [MovementController::class, 'store']);
 
-    // У групі middleware(['web', 'auth'])
-    Route::get('/cards', [CardController::class, 'index']); // Отримати всі картки
-    Route::delete('/cards/{card}', [CardController::class, 'destroy']); // Видалити картку
-
-    // ТИЛЬКИ ОДИН РАЗ
-    Route::get('/accounts/{account}/cards', [AccountController::class, 'getCards']);
-
-    // Якщо потрібно два методи для movements:
-    Route::get('/accounts/{account}/movements', [MovementController::class, 'index']); // По рахунку
-    Route::get('/movements', [MovementController::class, 'all']); // Всі movements користувача
-    Route::post('/movements', [MovementController::class, 'store']); // Створити movimiento
-    });
+    // 7. Proxy API financiera (Alpha Vantage)
+    Route::get('/stocks/quote', [StockProxyController::class, 'quote']);
+});

@@ -71,7 +71,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         const firstName = document.getElementById("setup_firstname").value.trim();
         const lastName = document.getElementById("setup_lastname").value.trim();
-        const phone = document.getElementById("setup_phone").value.trim();
+        const phoneInput = document.getElementById("setup_phone");
+        const phone = (phoneInput.dataset.rawValue || phoneInput.value).replace(/\s+/g, '').trim();
+        const phoneCountrySelect = document.getElementById("setup_phone_country");
+        const phoneCountryCode = phoneCountrySelect ? phoneCountrySelect.value : "+34";
 
         if (!firstName || !lastName) {
             alert("El nombre y los apellidos son obligatorios.");
@@ -111,11 +114,11 @@ document.addEventListener("DOMContentLoaded", async function () {
                     "X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
                 },
                 body: JSON.stringify({
-                    // CORRECCIÓN: Usamos snake_case porque tu error 422 lo pedía así ("first_name")
                     first_name: firstName,
                     last_name: lastName,
+                    phone_country_code: phoneCountryCode,
                     phone: phone,
-                    email: currentUserEmail // CORRECCIÓN: Lo enviamos porque tu error decía "email field is required"
+                    email: currentUserEmail
                 }),
             });
 
@@ -196,16 +199,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
     });
 
-    const ibanInput = document.getElementById('iban_number');
-    if (ibanInput) {
-        ibanInput.addEventListener('input', function (e) {
-            let target = e.target;
-            let input = target.value.replace(/\D/g, '').substring(0, 22);
-            let formatted = input.match(/.{1,4}/g)?.join(' ') || '';
-            target.value = formatted;
-            target.style.borderColor = input.length === 22 ? "#10b981" : "";
-        });
-    }
+    // IBAN formatting is handled by utils/formatters.js (data-format="iban")
 
     // ==========================================
     // E. SUBMIT FINAL (Sin cambios lógicos)
