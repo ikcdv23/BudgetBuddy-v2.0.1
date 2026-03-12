@@ -57,7 +57,6 @@ class AccountController extends Controller
             // Usamos el operador null coalescing (??) por seguridad
             'iban' => $validated['iban'] ?? null,
             'color' => $validated['color'],
-            'country_code' => $validated['country_code'] ?? null,
         ]);
 
         return response()->json([

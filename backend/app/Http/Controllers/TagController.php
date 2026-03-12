@@ -97,7 +97,7 @@ class TagController extends Controller
     }
 
     /**
-     * Показати конкретну тегу (публічний доступ)
+     * Mostrar una etiqueta específica
      */
     public function show(Tag $tag)
     {

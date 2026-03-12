@@ -42,8 +42,6 @@ let currentTimeframe = "1D";
     // 1. Inicializar Gráficos (Estáticos por diseño)
     createAllCharts();
     setupTimeButtons();
-    updateCurrentDate();
-
     // 2. Cargar Datos Vivos (APIs)
     await cargarTiempolrun();
     await actualizarPreciosHibrido();
@@ -254,14 +252,6 @@ function setupTimeButtons() {
             // Aquí podrías cambiar los datos del gráfico 'historial1D' por 'historial1W', etc.
         });
     });
-}
-
-function updateCurrentDate() {
-    const dateEl = document.getElementById('current-date');
-    if (dateEl) {
-        const now = new Date();
-        dateEl.textContent = now.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
 }
 
 })(); // Fin IIFE api-estadisticas.js

@@ -5,8 +5,8 @@
 :root {
   --primary: #217a4a;
   --primary-dark: #1a603a;
-  --secondary: #464F62; /* ЗМІНИ ТУТ з #f4f4f4 на #464F62 */
-  --tertiary: #ffffff; /* Додай цю змінну */
+  --secondary: #464F62; /* Cambiado de #f4f4f4 a #464F62 */
+  --tertiary: #ffffff; /* Variable terciaria */
   --text-main: #1f2937;
   --text-light: #6b7280;
   --white: #ffffff;
@@ -21,7 +21,7 @@
   --tag-color-6: #34d399;
   --tag-color-7: #fbbf24;
 
-  /* Додай типографію СЮДИ */
+  /* Tipografía */
   --font-heading: 'Outfit', sans-serif;
   --font-subheading: 'Questrial', sans-serif;
   --font-body: 'Roboto', sans-serif;
@@ -1131,7 +1131,7 @@ footer {
 }
 
 /* =========================================
-   DEFINICIÓN DE ANIMACIONES (KEYFRAMES) - ПЕРЕНЕСИ ВСІ СЮДИ
+   DEFINICIÓN DE ANIMACIONES (KEYFRAMES)
    ========================================= */
 
 /* 1. Deslizar hacia arriba + Fade In */
@@ -1174,7 +1174,7 @@ footer {
   to { opacity: 1; }
 }
 
-/* 5. Glow Pulse для лінії */
+/* 5. Glow Pulse para la línea */
 @keyframes glowPulse {
   0% {
     box-shadow: 
@@ -1190,7 +1190,7 @@ footer {
   }
 }
 
-/* 6. Subtle Glow для лінії */
+/* 6. Subtle Glow para la línea */
 @keyframes subtleGlow {
   0% {
     box-shadow: 

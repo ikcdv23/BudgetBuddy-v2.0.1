@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tags', function (Blueprint $table) {
-            // Спочатку видалити foreign key
+            // Primero eliminar la clave foránea
             if (Schema::hasColumn('tags', 'user_id')) {
                 $table->dropForeign(['user_id']);
                 $table->dropColumn('user_id');

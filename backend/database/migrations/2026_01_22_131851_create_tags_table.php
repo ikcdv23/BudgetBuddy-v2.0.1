@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('color')->default('#cccccc');
-            $table->string('icon')->default('tag'); // Додати іконку
+            $table->string('icon')->default('tag'); // Icono de la etiqueta
             $table->timestamps();
         });
     }

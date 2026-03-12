@@ -29,7 +29,7 @@
     };
 
     // ==========================================
-    // 2. ЗМІННІ
+    // 2. VARIABLES
     // ==========================================
     let currentCards = [];
     let currentTags = [];
@@ -39,7 +39,7 @@
     let draggedCardId = null;
 
     // ==========================================
-    // 3. DOM ЕЛЕМЕНТИ
+    // 3. ELEMENTOS DOM
     // ==========================================
     const dom = {
         cardAccountSelect: document.getElementById('cardAccountSelect'),
@@ -68,7 +68,6 @@
         destinationIbanGroup: document.getElementById('destinationIbanGroup'),
         destinationIbanInput: document.getElementById('destinationIban'),
         movementCategorySelect: document.getElementById('movementCategory'),
-        dateContainer: document.getElementById('current-date'),
         // Card creation: full number + security code
         cardFullNumber: document.getElementById('card-full-number'),
         cardSecurityCode: document.getElementById('card-security-code'),
@@ -89,16 +88,6 @@
     // 4. HELPER FUNCTIONS
     // ==========================================
     // formatCurrency → window.formatCurrency (core/utils.js)
-
-    function updateDate() {
-        if (!dom.dateContainer) return;
-        const now = new Date();
-        dom.dateContainer.textContent = now.toLocaleDateString('es-ES', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
-    }
 
     // apiRequest → window.apiRequest (core/api-client.js)
 
@@ -168,7 +157,7 @@
     }
 
     // ==========================================
-    // 5. ЗАВАНТАЖЕННЯ ДАНИХ
+    // 5. CARGA DE DATOS
     // ==========================================
     async function loadCards() {
         try {
@@ -229,17 +218,17 @@
         }
     }
 
-    // Змінна для збереження конвертів / Variable para guardar los sobres
+    // Variable para guardar los sobres
     let currentEnvelopes = [];
 
-    // Завантаження конвертів з сервера / Cargar sobres del servidor
+    // Cargar sobres del servidor
     async function loadEnvelopes() {
         try {
             const data = await apiRequest(API.ENVELOPES.INDEX);
             if (data) {
                 currentEnvelopes = Array.isArray(data) ? data : [];
                 console.log(`Loaded ${currentEnvelopes.length} envelopes`);
-                renderEnvelopeDropdown(); // Оновлюємо випадаючий список / Actualizamos el desplegable
+                renderEnvelopeDropdown(); // Actualizamos el desplegable
             }
         } catch (error) {
             console.error('Error loading envelopes:', error);
@@ -273,12 +262,12 @@
         });
     }
 
-    // Відображення списку конвертів у модальному вікні / Mostrar lista de sobres en el modal
+    // Mostrar lista de sobres en el modal
     function renderEnvelopeDropdown() {
         const envelopeSelect = document.getElementById('movementEnvelope');
         if (!envelopeSelect) return;
 
-        envelopeSelect.innerHTML = '<option value="">Sin sobre</option>'; // Опція за замовчуванням / Opción por defecto
+        envelopeSelect.innerHTML = '<option value="">Sin sobre</option>';
 
         currentEnvelopes.forEach(env => {
             const option = document.createElement('option');
@@ -345,7 +334,7 @@
     }
 
     // ==========================================
-    // 6. РЕНДЕРИНГ ІНТЕРФЕЙСУ
+    // 6. RENDERIZADO DE INTERFAZ
     // ==========================================
     function renderCardDropdown() {
         if (!dom.cardAccountSelect) return;
@@ -393,7 +382,7 @@
             return;
         }
 
-        // Рендеримо картки
+        // Renderizar tarjetas
         currentCards.forEach((card) => {
             const cardEl = document.createElement('div');
             let visualType = card.type === "credit" ? "mastercard" : "visa";
@@ -403,7 +392,7 @@
             cardEl.setAttribute('draggable', 'true');
             cardEl.setAttribute('data-card-id', card.id.toString());
 
-            // Форматуємо дату
+            // Formatear fecha
             let expDateFormatted = "??/??";
             if (card.expiration_date) {
                 try {
@@ -414,7 +403,7 @@
                 } catch (e) { }
             }
 
-            // Баланс
+            // Balance
             const balance = card.account?.current_balance || card.account?.balance || 0;
 
             cardEl.innerHTML = `
@@ -453,7 +442,7 @@
             dom.cardsContainer.appendChild(cardEl);
         });
 
-        // Примарна картка
+        // Tarjeta fantasma (añadir nueva)
         const ghostCard = document.createElement('div');
         ghostCard.className = 'mini-card ghost-card';
         ghostCard.innerHTML = `
@@ -467,10 +456,10 @@
         ghostCard.addEventListener('click', openCardModal);
         dom.cardsContainer.appendChild(ghostCard);
 
-        // Зона видалення
+        // Zona de eliminación
         createDeleteZone();
 
-        // Скрол
+        // Scroll horizontal
         initializeHorizontalScroll();
     }
 
@@ -765,7 +754,7 @@
     }
 
     // ==========================================
-    // 8. ФУНКЦІЇ МОДАЛІВ
+    // 8. FUNCIONES DE MODALES
     // ==========================================
     function openCardModal() {
         loadAccountsForCardModal();
@@ -851,7 +840,7 @@
     }
 
     // ==========================================
-    // 9. ОБРОБНИКИ ПОДІЙ
+    // 9. EVENT HANDLERS
     // ==========================================
     if (dom.cardAccountSelect) {
         dom.cardAccountSelect.addEventListener('change', function () {
@@ -1252,7 +1241,6 @@
     // ==========================================
     async function init() {
         console.log('Initializing tarjetas.js...');
-        updateDate();
 
         const results = await Promise.allSettled([
             loadCards(),
@@ -1278,7 +1266,6 @@
             renderCardDetail(null);
         }
 
-        setInterval(updateDate, 60000);
     }
 
 

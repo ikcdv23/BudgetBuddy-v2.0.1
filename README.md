@@ -6,7 +6,7 @@
 
 **App de finanzas personales para estudiantes**
 
-[![Version](https://img.shields.io/badge/version-v2.2.1-green)]()
+[![Version](https://img.shields.io/badge/version-v2.3.0-green)]()
 [![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)]()
 [![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)]()
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)]()
@@ -28,7 +28,7 @@ BudgetBuddy es una aplicación web de gestión financiera diseñada para estudia
 
 - **Gestión de cuentas bancarias** con IBAN y saldo en tiempo real
 - **Sistema de sobres** (envelope budgeting) con asignación y objetivo por categoría
-- **Tarjetas Visa/Mastercard** con panel de detalle y estadísticas
+- **Tarjetas Visa/Mastercard** con panel de detalle, estadísticas y almacenamiento cifrado del número completo
 - **Movimientos** — gastos, ingresos y traspasos entre cuentas
 - **Etiquetas con colores** para categorizar movimientos
 - **Dashboard de mercado** educativo con cotizaciones de ETFs (Alpha Vantage)
@@ -71,6 +71,16 @@ docker compose up -d --build
 > La primera ejecución genera automáticamente el `.env` de Laravel y ejecuta migraciones.
 
 ## Novedades
+
+### v2.3.0 — 12 Mar 2026
+
+- **Numero completo y codigo de seguridad en tarjetas**: almacenamiento cifrado (Laravel `encrypted` cast) del numero completo y CVV. Campos ocultos por defecto (`$hidden`), revelables mediante verificacion de contraseña (`POST /api/cards/{id}/reveal`). Boton copiar al portapapeles. Auto-formateo del numero en grupos de 4 digitos.
+- **Limpieza completa de idioma**: traducidos ~80 comentarios de ucraniano a español en 10 archivos (JS, CSS, PHP, migraciones).
+- **Eliminado codigo muerto**: `country_code` en AccountController, funcion `updateDate()` y display de fecha actual en tarjetas/estadisticas, CSS `.date-container` y variable `--date-bg`.
+- **Validacion de fecha de caducidad**: las tarjetas ya no aceptan fechas pasadas (`after_or_equal:today`).
+- **Timeout en navegacion PJAX**: `AbortController` con timeout de 6s en fetch + safety timeout de 8s para liberar estado bloqueado.
+- **Fix setup wizard**: eliminado `required` del input de caducidad de tarjeta (era opcional pero bloqueaba el envio del formulario).
+- **Fix movimientos**: corregido envio de importe negativo que provocaba error 422 silencioso.
 
 ### v2.2.1 — 12 Mar 2026
 

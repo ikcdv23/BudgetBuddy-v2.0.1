@@ -20,15 +20,6 @@
     gap: 15px;
 }
 
-.date-container {
-    background-color: var(--date-bg);
-    color: white;
-    padding: 6px 15px;
-    border-radius: var(--radius-full);
-    font-size: 14px;
-    font-weight: 500;
-}
-
 /* =========================================== */
 /* GRID LAYOUT */
 /* =========================================== */

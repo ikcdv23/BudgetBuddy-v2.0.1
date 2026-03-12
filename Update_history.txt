@@ -1,4 +1,117 @@
 ============================================================
+  v2.3.0 — MEJORAS DE CALIDAD Y SEGURIDAD (2026-03-12)
+============================================================
+
+RESUMEN:
+Número completo y código de seguridad en tarjetas con cifrado,
+limpieza completa de idioma (ucraniano → español), eliminación de
+código muerto, validaciones mejoradas, timeout en PJAX y bugfixes.
+
+------------------------------------------------------------
+ARCHIVOS CREADOS:
+------------------------------------------------------------
+1. backend/database/migrations/2026_03_12_200000_add_card_number_and_security_code_to_cards_table.php
+   → Añade card_number (text, nullable) y security_code (text, nullable)
+   → Columnas text porque encrypted cast serializa a texto cifrado largo
+
+------------------------------------------------------------
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+
+--- FEATURE: Número completo + código de seguridad ---
+
+2. backend/app/Models/Card.php
+   → $fillable: añadidos card_number, security_code
+   → $hidden: ['card_number', 'security_code'] (nunca en JSON normal)
+   → $casts: encrypted para ambos campos
+   → $appends: has_full_number, has_security_code (booleans)
+
+3. backend/app/Http/Controllers/CardController.php
+   → store(): validación opcional card_number (13-19 dígitos),
+     security_code (3-7 dígitos). Auto-extrae last_4_digits.
+   → revealSensitive(): verifica propiedad + contraseña con Hash::check
+
+4. backend/routes/api.php
+   → Nueva ruta: POST /cards/{card}/reveal
+
+5. backend/resources/views/misTarjetas.blade.php
+   → 2 campos nuevos en modal: número completo + código de seguridad
+   → Dialog #revealPasswordModal para verificación de contraseña
+
+6. backend/public/js/core/formatters.js
+   → Nuevo handler: handleCardNumber (data-format="card-number")
+     Agrupa hasta 19 dígitos en bloques de 4
+
+7. backend/public/js/tarjetas.js
+   → Auto-fill: número completo → últimos 4 dígitos (readonly)
+   → renderCardDetail(): campos sensibles enmascarados con botón ojo
+   → openRevealModal/revealSensitiveData: modal contraseña + API call
+   → copyToClipboard(): navigator.clipboard + notificación
+   → Fix: createMovement() enviaba -amount → error 422 silencioso
+
+8. backend/public/css/tarjetas.css
+   → Nuevos: .card-sensitive-field, .sensitive-label, .sensitive-value,
+     .btn-reveal, .btn-copy, .form-hint + responsive 600px
+
+9. backend/public/css/app-dark-mode.css
+   → Dark mode: .card-sensitive-field, .btn-reveal, .btn-copy
+
+--- LIMPIEZA: Comentarios ucraniano → español (~80 traducciones) ---
+
+10. backend/public/js/tarjetas.js (18 comentarios)
+11. backend/app/Http/Controllers/TagController.php (1 comentario)
+12. backend/bootstrap/app.php (2 comentarios)
+13. backend/app/Http/Middleware/CustomVerifyCsrfToken.php (1 comentario)
+14. backend/database/migrations/2026_01_22_131851_create_tags_table.php (1)
+15. backend/database/migrations/2026_01_30_110827_remove_user_id_from_tags_table.php (1)
+16. backend/public/js/invoices-modal.js (11 comentarios)
+17. backend/public/css/invoices-modal.css (17 comentarios)
+18. backend/public/css/landing.css (6 comentarios)
+19. backend/public/css/notification.css (18 comentarios)
+
+--- ELIMINACIÓN: Código muerto ---
+
+20. backend/app/Http/Controllers/AccountController.php
+    → Eliminada línea: 'country_code' => $validated['country_code'] ?? null
+      (campo no validado, no en $fillable, no en BD)
+
+21. backend/public/js/tarjetas.js
+    → Eliminados: dom.dateContainer, updateDate(), llamada en init(),
+      setInterval(updateDate, 60000)
+
+22. backend/public/js/api-estadisticas.js
+    → Eliminada llamada: updateCurrentDate()
+
+23. backend/resources/views/misTarjetas.blade.php
+    → Eliminado: <div id="current-date">
+
+24. backend/resources/views/estadisticas.blade.php
+    → Eliminado: <span id="current-date">
+
+25. backend/public/css/app-forms.css
+    → Eliminada: clase .date-container
+
+26. backend/public/css/app-variables.css
+    → Eliminada: variable --date-bg
+
+27. backend/public/css/app-dark-mode.css
+    → Eliminada: variable --date-bg
+
+--- VALIDACIONES Y ROBUSTEZ ---
+
+28. backend/app/Http/Controllers/CardController.php
+    → expiration_date: añadido after_or_equal:today
+
+29. backend/public/js/pjax-nav.js
+    → AbortController con timeout 6s en fetch
+    → Safety timeout 8s: libera estado navigating si queda bloqueado
+    → clearTimeout en finally
+
+30. backend/resources/views/setup.blade.php
+    → Eliminado required del input card_expiration (campo opcional
+      dentro de sección oculta, causaba error de validación del navegador)
+
+============================================================
   REDISEÑO COMPLETO "AJUSTES" (2026-03-12)
 ============================================================
 

@@ -54,11 +54,22 @@
         if (navigating) return;
         navigating = true;
 
+        // Timeout de seguridad: si la navegación tarda más de 8s, liberar el estado
+        var safetyTimeout = setTimeout(function () {
+            navigating = false;
+        }, 8000);
+
         try {
+            var controller = new AbortController();
+            var fetchTimeout = setTimeout(function () { controller.abort(); }, 6000);
+
             const resp = await fetch(url, {
                 credentials: 'same-origin',
-                headers: { 'Accept': 'text/html' }
+                headers: { 'Accept': 'text/html' },
+                signal: controller.signal
             });
+
+            clearTimeout(fetchTimeout);
 
             if (resp.redirected) {
                 window.location.href = resp.url;
@@ -123,6 +134,7 @@
             console.error('PJAX navigation failed:', err);
             window.location.href = url;
         } finally {
+            clearTimeout(safetyTimeout);
             navigating = false;
         }
     }

@@ -10,7 +10,6 @@
 <div class="page-header">
     <h1 class="page-title">
         Estadísticas de Mercado
-        <span class="date-container" id="current-date" aria-label="Fecha actual">28 Abr, 2028</span>
     </h1>
 </div>
 

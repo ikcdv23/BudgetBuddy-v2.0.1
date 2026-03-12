@@ -1,5 +1,5 @@
 /* =========================================== */
-/* СТИЛІ ДЛЯ ПОПАПУ ПОВІДОМЛЕНЬ */
+/* ESTILOS DEL POPUP DE NOTIFICACIONES */
 /* =========================================== */
 
 .notifications-popup {
@@ -91,7 +91,7 @@
     border-radius: 3px;
 }
 
-/* Елемент повідомлення */
+/* Elemento de notificación */
 .notification-item {
     display: flex;
     align-items: flex-start;
@@ -128,7 +128,7 @@
     animation: pulse 2s infinite;
 }
 
-/* Іконка повідомлення */
+/* Icono de notificación */
 .notification-icon {
     width: 40px;
     height: 40px;
@@ -152,7 +152,7 @@
     color: var(--text-muted);
 }
 
-/* Контент повідомлення */
+/* Contenido de notificación */
 .notification-content {
     flex: 1;
     min-width: 0;
@@ -186,7 +186,7 @@
     font-size: 10px;
 }
 
-/* Дії з повідомленнями */
+/* Acciones de notificación */
 .notification-action {
     background: none;
     border: none;
@@ -212,7 +212,7 @@
     font-size: 14px;
 }
 
-/* Пустий стан */
+/* Estado vacío */
 .notifications-empty {
     text-align: center;
     padding: 50px 30px;
@@ -237,7 +237,7 @@
     opacity: 0.7;
 }
 
-/* Футер попапу */
+/* Footer del popup */
 .notifications-footer {
     display: flex;
     gap: 10px;
@@ -253,7 +253,7 @@
     padding: 8px 12px;
 }
 
-/* Індикатор кількості повідомлень */
+/* Indicador de cantidad de notificaciones */
 .notification-badge {
     position: absolute;
     top: -5px;
@@ -271,7 +271,7 @@
     pointer-events: none;
 }
 
-/* Стилі для затемнення фону */
+/* Estilos para el fondo oscuro */
 .notifications-overlay {
     position: fixed;
     top: 0;
@@ -284,7 +284,7 @@
     backdrop-filter: blur(2px);
 }
 
-/* Анімація для дзвіночка при нових повідомленнях */
+/* Animación de campana para nuevas notificaciones */
 .notification-btn.shake .fa-bell {
     animation: shake 0.5s ease-in-out;
 }
@@ -295,7 +295,7 @@
     20%, 40%, 60%, 80% { transform: rotate(10deg); }
 }
 
-/* Показ при відкритті попапу */
+/* Mostrar al abrir el popup */
 .notifications-popup.show {
     display: flex;
 }
@@ -305,10 +305,10 @@
 }
 
 /* =========================================== */
-/* АДАПТИВНІСТЬ ДЛЯ ПОПАПУ ПОВІДОМЛЕНЬ */
+/* RESPONSIVIDAD DEL POPUP DE NOTIFICACIONES */
 /* =========================================== */
 
-/* Планшети (992px та менше) */
+/* Tablets (992px y menor) */
 @media (max-width: 992px) {
     .notifications-popup {
         top: 90px;
@@ -358,7 +358,7 @@
     }
 }
 
-/* Планшети та великі телефони (768px та менше) */
+/* Tablets y móviles grandes (768px y menor) */
 @media (max-width: 768px) {
     .notifications-popup {
         position: fixed;
@@ -449,7 +449,7 @@
     }
 }
 
-/* Телефони (480px та менше) */
+/* Móviles (480px y menor) */
 @media (max-width: 480px) {
     .notifications-popup {
         max-height: 85vh;
@@ -536,7 +536,7 @@
     }
 }
 
-/* Малі телефони (375px та менше) */
+/* Móviles pequeños (375px y menor) */
 @media (max-width: 375px) {
     .notifications-popup {
         max-height: 90vh;
@@ -608,7 +608,7 @@
     }
 }
 
-/* Дуже малі телефони (до 320px) */
+/* Móviles muy pequeños (hasta 320px) */
 @media (max-width: 320px) {
     .notifications-header h3 {
         font-size: 0.85rem;

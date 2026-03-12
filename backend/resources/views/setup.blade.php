@@ -168,7 +168,7 @@
                             </div>
                             <div class="form-group flex-1">
                                 <label for="card-exp">Caducidad</label>
-                                <input type="month" id="card_expiration" required />
+                                <input type="month" id="card_expiration" />
                                 <span class="form-hint-text">Ej: 12/2028 o usa el calendario</span>
                             </div>
                         </div>

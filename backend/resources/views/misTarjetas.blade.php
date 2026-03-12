@@ -10,7 +10,6 @@
 <div class="page-header">
     <h1 class="page-title">
         Mis tarjetas
-        <div class="date-container" id="current-date">--/--/----</div>
     </h1>
 </div>
 

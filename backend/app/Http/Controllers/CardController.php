@@ -41,7 +41,7 @@ class CardController extends Controller
             $rules = [
                 'account_id'      => 'required|exists:accounts,id',
                 'alias'           => 'required|string|max:50',
-                'expiration_date' => 'required|date',
+                'expiration_date' => 'required|date|after_or_equal:today',
                 'type'            => 'required|in:credit,debit',
                 'card_number'     => 'nullable|string|min:13|max:19|regex:/^\d+$/',
                 'security_code'   => 'nullable|string|min:3|max:7|regex:/^\d+$/',

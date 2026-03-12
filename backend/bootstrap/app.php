@@ -18,8 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ]);
     
     $middleware->validateCsrfTokens(except: [
-        'api/*', // Додайте цей рядок
-        'get-csrf-token',   // Додай цей маршрут
+        'api/*', // Excluir rutas API
+        'get-csrf-token',   // Excluir ruta CSRF token
     ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
