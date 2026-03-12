@@ -186,11 +186,17 @@
 /* SCROLL HORIZONTAL PARA TARJETAS            */
 /* =========================================== */
 .cards-section-wrapper {
-    height: 220px;
+    min-height: 220px;
     overflow: hidden;
     position: relative;
     margin-bottom: 15px;
     width: 100%;
+}
+
+/* Cuando no hay tarjetas, permitir que el wrapper crezca */
+.cards-section-wrapper:has(.no-cards-message) {
+    overflow: visible;
+    height: auto;
 }
 
 #cards-container {

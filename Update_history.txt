@@ -3,9 +3,10 @@
 ============================================================
 
 RESUMEN:
-Número completo y código de seguridad en tarjetas con cifrado,
+Número completo y CVC en tarjetas con cifrado (ambos obligatorios),
 limpieza completa de idioma (ucraniano → español), eliminación de
 código muerto, validaciones mejoradas, timeout en PJAX y bugfixes.
+Fix botón "Añadir tarjeta" invisible en estado vacío.
 
 ------------------------------------------------------------
 ARCHIVOS CREADOS:
@@ -110,6 +111,29 @@ ARCHIVOS MODIFICADOS:
 30. backend/resources/views/setup.blade.php
     → Eliminado required del input card_expiration (campo opcional
       dentro de sección oculta, causaba error de validación del navegador)
+
+--- FIXES: Tarjeta obligatoria + botón invisible ---
+
+31. backend/app/Http/Controllers/CardController.php
+    → card_number: nullable → required (13-19 dígitos)
+    → security_code: nullable min:3 max:7 → required size:3 (CVC fijo)
+    → last_4_digits: siempre nullable (se auto-calcula del número)
+    → Eliminada lógica condicional de last_4_digits
+
+32. backend/resources/views/misTarjetas.blade.php
+    → card_number: añadido required, label sin "(opcional)"
+    → security_code → CVC: label cambiado, maxlength=3, required
+    → Hint: "3 dígitos del reverso de la tarjeta"
+    → last_4_digits: añadido readonly (auto-calculado)
+
+33. backend/public/js/tarjetas.js
+    → card_number y security_code se envían siempre (no condicional)
+    → Label panel detalle: "Código de seguridad" → "CVC"
+
+34. backend/public/css/tarjetas.css
+    → .cards-section-wrapper: height → min-height (no recorta)
+    → Nuevo: :has(.no-cards-message) → overflow: visible, height: auto
+      (el botón "Añadir tarjeta" era invisible por overflow: hidden)
 
 ============================================================
   REDISEÑO COMPLETO "AJUSTES" (2026-03-12)

@@ -74,13 +74,14 @@ docker compose up -d --build
 
 ### v2.3.0 — 12 Mar 2026
 
-- **Numero completo y codigo de seguridad en tarjetas**: almacenamiento cifrado (Laravel `encrypted` cast) del numero completo y CVV. Campos ocultos por defecto (`$hidden`), revelables mediante verificacion de contraseña (`POST /api/cards/{id}/reveal`). Boton copiar al portapapeles. Auto-formateo del numero en grupos de 4 digitos.
+- **Numero completo y CVC en tarjetas**: almacenamiento cifrado (Laravel `encrypted` cast) del numero completo (obligatorio, formateado en grupos de 4) y CVC (3 digitos, obligatorio). Campos ocultos por defecto (`$hidden`), revelables mediante verificacion de contraseña (`POST /api/cards/{id}/reveal`). Boton copiar al portapapeles. Ultimos 4 digitos auto-calculados (readonly).
 - **Limpieza completa de idioma**: traducidos ~80 comentarios de ucraniano a español en 10 archivos (JS, CSS, PHP, migraciones).
 - **Eliminado codigo muerto**: `country_code` en AccountController, funcion `updateDate()` y display de fecha actual en tarjetas/estadisticas, CSS `.date-container` y variable `--date-bg`.
 - **Validacion de fecha de caducidad**: las tarjetas ya no aceptan fechas pasadas (`after_or_equal:today`).
 - **Timeout en navegacion PJAX**: `AbortController` con timeout de 6s en fetch + safety timeout de 8s para liberar estado bloqueado.
 - **Fix setup wizard**: eliminado `required` del input de caducidad de tarjeta (era opcional pero bloqueaba el envio del formulario).
 - **Fix movimientos**: corregido envio de importe negativo que provocaba error 422 silencioso.
+- **Fix boton "Añadir tarjeta"**: el boton de estado vacio quedaba cortado por `overflow: hidden` del contenedor.
 
 ### v2.2.1 — 12 Mar 2026
 

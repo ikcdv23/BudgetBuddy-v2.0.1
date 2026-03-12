@@ -43,16 +43,10 @@ class CardController extends Controller
                 'alias'           => 'required|string|max:50',
                 'expiration_date' => 'required|date|after_or_equal:today',
                 'type'            => 'required|in:credit,debit',
-                'card_number'     => 'nullable|string|min:13|max:19|regex:/^\d+$/',
-                'security_code'   => 'nullable|string|min:3|max:7|regex:/^\d+$/',
+                'card_number'     => 'required|string|min:13|max:19|regex:/^\d+$/',
+                'security_code'   => 'required|string|size:3|regex:/^\d+$/',
+                'last_4_digits'   => 'nullable|string|size:4',
             ];
-
-            // last_4_digits obligatorio solo si no se proporciona card_number
-            if ($request->filled('card_number')) {
-                $rules['last_4_digits'] = 'nullable|string|size:4';
-            } else {
-                $rules['last_4_digits'] = 'required|string|size:4';
-            }
 
             $validated = $request->validate($rules);
 

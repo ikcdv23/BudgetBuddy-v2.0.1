@@ -561,7 +561,7 @@
             if (card.has_security_code) {
                 sensitiveHTML += `
                     <div class="card-sensitive-field" data-field="security_code">
-                        <div class="sensitive-label">Codigo de seguridad</div>
+                        <div class="sensitive-label">CVC</div>
                         <div class="sensitive-value">
                             <span class="sensitive-masked">&bull;&bull;&bull;</span>
                             <span class="sensitive-revealed" style="display:none"></span>
@@ -1020,12 +1020,8 @@
                     expiration_date: expDate
                 };
 
-                if (fullNumberRaw) {
-                    cardData.card_number = fullNumberRaw;
-                }
-                if (securityCode) {
-                    cardData.security_code = securityCode;
-                }
+                cardData.card_number = fullNumberRaw;
+                cardData.security_code = securityCode;
 
                 const success = await createCard(cardData);
                 if (success) {

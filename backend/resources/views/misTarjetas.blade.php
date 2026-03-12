@@ -133,25 +133,26 @@
             </div>
 
             <div class="form-group">
-                <label for="card-full-number">Numero de tarjeta (opcional)</label>
+                <label for="card-full-number">Numero de tarjeta</label>
                 <input type="text" id="card-full-number"
                        placeholder="1234 5678 9012 3456" maxlength="23"
                        inputmode="numeric" data-format="card-number"
-                       autocomplete="off" />
-                <span class="form-hint">Si lo introduces, los ultimos 4 digitos se rellenan automaticamente</span>
+                       autocomplete="off" required />
+                <span class="form-hint">Los ultimos 4 digitos se rellenan automaticamente</span>
             </div>
 
             <div class="form-row-flex">
                 <div class="form-group flex-1">
                     <label for="card-digits">Ultimos 4 digitos</label>
-                    <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" />
+                    <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" readonly />
                 </div>
                 <div class="form-group flex-1">
-                    <label for="card-security-code">Codigo de seguridad (opcional)</label>
+                    <label for="card-security-code">CVC</label>
                     <input type="password" id="card-security-code"
-                           placeholder="&bull;&bull;&bull;" maxlength="7"
+                           placeholder="&bull;&bull;&bull;" maxlength="3"
                            inputmode="numeric" data-format="digits"
-                           autocomplete="off" />
+                           autocomplete="off" required />
+                    <span class="form-hint">3 digitos del reverso de la tarjeta</span>
                 </div>
             </div>
 
