@@ -2,9 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Instructions
+
+### Workflow
+- Mantener este CLAUDE.md actualizado tras cada cambio importante
+- Antes de cada commit, actualizar `Update_history.txt` con las novedades de la versión
+- NO incluir "Co-Authored-By" en mensajes de commit
+- Usar SemVer: PATCH (bugfixes), MINOR (nuevas features compatibles), MAJOR (breaking changes). Versión actual: **v2.4.0**
+- Sincronizar también el badge de versión en `README.md` cuando cambie la versión
+- Documentar cambios grandes en `borrame.txt` (archivo temporal de referencia)
+
+### Idioma y estilo
+- UI y comentarios en español, identificadores de código en inglés
+- Responder siempre en español
+
 ## Project Overview
 
-BudgetBuddy is a personal finance management app for students. It uses an envelope budgeting system with expense tracking, budget management, and an educational investment dashboard. The codebase is bilingual (Spanish UI/comments, English code identifiers).
+BudgetBuddy es una app web de gestión financiera para estudiantes. Implementa el sistema de sobres (envelope budgeting) con tracking de gastos/ingresos, gestión de tarjetas con datos cifrados, y un dashboard educativo de mercado con ETFs.
 
 ## Architecture
 
@@ -13,14 +27,14 @@ BudgetBuddy is a personal finance management app for students. It uses an envelo
 - **Proxy**: Nginx reverse proxy as single entry point (port 80)
 - **Deployment**: Docker Compose (4 services: nginx, backend, db, phpmyadmin)
 
-All traffic goes through Nginx → backend:8000. The landing page (`/`) is a standalone Blade view (`landing.blade.php`). App pages (desktop, misTarjetas, estadisticas, ajustes, setup) are Blade views with `auth` middleware protection. The `frontend/` directory is legacy code (no longer deployed).
+All traffic goes through Nginx → backend:8000. The landing page (`/`) is a standalone Blade view (`landing.blade.php`). App pages (desktop, misTarjetas, estadisticas, ajustes, setup) are Blade views with `auth` middleware protection.
 
 ### Blade Architecture
 - **Layout**: `layouts/budgetbuddy.blade.php` — shared shell with header, sidebar nav, mobile nav. Uses `@yield('title')`, `@yield('content')`, `@stack('styles')`, `@stack('scripts')`. Includes flash messages (`session('success')`, `$errors`).
 - **Components**: `components/app-header.blade.php`, `components/sidebar-nav.blade.php`, `components/mobile-nav.blade.php` — reusable nav with `$active` prop (string: 'desktop', 'estadisticas', 'misTarjetas', 'ajustes') for active state.
 - **Pages that extend the layout** (pass `$currentPage` from route/controller):
   - `desktop.blade.php` — Dashboard: cuentas, tarjetas vinculadas, etiquetas, metas. JS: `desktop.js`. Modals: account, card, tag, goal, transfer.
-  - `misTarjetas.blade.php` — Gestión de tarjetas + movimientos. Layout 2-col: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width debajo. JS: `tarjetas.js` (incluye `renderCardDetail()` con campos sensibles reveal). Modals: card (con número completo y código seguridad opcionales), movement, reveal password (verificación contraseña para ver datos sensibles cifrados).
+  - `misTarjetas.blade.php` — Gestión de tarjetas + movimientos. Layout 2-col: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width debajo. JS: `tarjetas.js` (incluye `renderCardDetail()` con campos sensibles reveal). Modals: card (número completo obligatorio, CVC obligatorio), movement, reveal password (verificación contraseña para ver datos sensibles cifrados).
   - `estadisticas.blade.php` — Dashboard educativo de mercado (ETFs). JS: `api-estadisticas.js` + Chart.js CDN.
   - `ajustes.blade.php` — Hub de ajustes con 2 tabs ("Mi Perfil" | "Configuración"). Tab Perfil: hero con avatar clickable (8 presets + subida foto), form datos personales (nombre, email, teléfono), seguridad (cambiar contraseña). Tab Config: selector moneda (EUR/USD/GBP), selector tema (light/dark/auto), gestión datos (exportar CSV, eliminar cuenta), planes futuros (gamificación, notificaciones), about, cerrar sesión. Modales: avatar picker, password change, delete account. JS: `backajustes.js`. CSS: `backajustes.css`. Served from `ProfileController@show` which passes `$user` and `$currentPage`. Datos iniciales vía `window.__ajustesData`.
 - **Standalone pages** (no layout):
@@ -103,9 +117,9 @@ php artisan tinker                         # REPL
 
 - **Account** — Bank account with IBAN, balance, color. Has a `spendable_balance` virtual attribute (balance minus envelope allocations).
 - **Movement** — Transaction with types: `gasto` (expense), `ingreso` (income), `traspaso` (transfer). Belongs to an account, optionally to a card and envelope. Has N:M relationship with Tags via `movement_tag` pivot table.
-- **Envelope** — Budget category (envelope method). Has `allocated_amount` and `target_amount`.
-- **Card** — Payment card linked to an account. Optionally stores `card_number` and `security_code` (encrypted at rest via Laravel `encrypted` cast). These fields are in `$hidden` — never returned in normal JSON responses. Use `POST /api/cards/{card}/reveal` with password verification to access them. `has_full_number` and `has_security_code` boolean appends indicate if sensitive data is available.
-- **Tag** — Color-coded labels for categorizing movements.
+- **Envelope** — Budget category (envelope method). Has `allocated_amount` and `target_amount`. Backend validates that sum of allocations per account doesn't exceed `current_balance`.
+- **Card** — Payment card linked to an account. Stores `card_number` (required, 13-19 digits) and `security_code` / CVC (required, exactly 3 digits), both encrypted at rest via Laravel `encrypted` cast. `last_4_digits` se auto-calcula del número completo. Campos sensibles en `$hidden` — nunca se envían en JSON normales. `POST /api/cards/{card}/reveal` con verificación de contraseña para acceder. `has_full_number` y `has_security_code` como boolean appends.
+- **Tag** — Color-coded labels for categorizing movements. Per-user (each user has their own tags via `user_id` FK). Unique name constraint per user. Limit: 50 tags per user.
 
 ## API Structure
 
@@ -179,24 +193,13 @@ backend/
 - `apiRequest(url, method, data)` centraliza: CSRF cookie automático para mutaciones, headers con XSRF-TOKEN, manejo de 401 (redirect login) y 422 (throw con mensajes de validación). No muestra notificación propia — cada caller maneja su UI.
 - `initDragAndDrop(config)` acepta selectores + callbacks, reemplaza implementaciones inline en desktop.js y tarjetas.js.
 
-## Instructions
+## Changelog Summary
 
-- Despues de cada cambio o modificaicon importante mantener CLAUDE.md actualizado y al dia, lo más completo posible 
+> Historial detallado en `Update_history.txt`. Aquí solo las versiones con resumen breve.
 
-## Last Changes Log
-
-- **Número completo de tarjeta y código de seguridad** (2026-03-12): Nuevas columnas `card_number` y `security_code` en tabla `cards` (cifrado con Laravel `encrypted` cast). Campos en `$hidden` — nunca se envían en respuestas JSON normales. `has_full_number` y `has_security_code` como appends booleanos. Nuevo endpoint `POST /api/cards/{card}/reveal` que verifica contraseña antes de devolver datos descifrados. Frontend: modal de creación con campo número completo (auto-formateo cada 4 dígitos via formatters.js `card-number`) y código de seguridad opcionales; auto-fill de últimos 4 dígitos. Panel detalle: campos sensibles enmascarados con botón reveal (ojo) → modal de contraseña → datos visibles + botón copiar al portapapeles. Dark mode para nuevos componentes. Responsive para campos sensibles en móvil.
-- **Rediseño completo "Ajustes"** (2026-03-12): Transformación de página simple de perfil a hub de ajustes con 2 tabs. Tab "Mi Perfil": hero avatar clickable (8 presets Font Awesome con gradientes + subida foto JPG/PNG ≤2MB), form datos personales con email editable, modal cambiar contraseña. Tab "Configuración": selector moneda (EUR/USD/GBP) con guardado inmediato, selector tema (integra theme-toggle.js), exportar CSV, eliminar cuenta con confirmación password, sección planes futuros (gamificación + notificaciones), about v2.2.1, cerrar sesión. Backend: 5 rutas API nuevas (avatar, password, currency, export, delete account), eliminada PUT /ajustes (todo va por API). Avatar storage en `storage/app/public/avatars/`, `storage:link` en docker-entrypoint.sh. Header avatar-aware con soporte preset/foto/initials. utils.js `updateAvatarUI()` acepta user object con profile.avatar. CSS limpiado: eliminados ~600 líneas de código muerto (sessions, export-options legacy). Dark mode completo para nuevos componentes. Ver `borrame.txt` para detalles.
-- **Rediseño completo "Mis Tarjetas"** (2026-03-12): Layout 2-col desktop: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width independiente debajo. `renderCardDetail(card)` en tarjetas.js: muestra alias, tipo, últimos 4 dígitos, caducidad, cuenta vinculada, y grid 2×2 de stats (saldo, movimientos, gastos, ingresos). Highlight `.selected` en mini-card activa. Dark mode para nuevos componentes. Responsive ≤992px: 1 columna. ≤600px: panel compacto. Ver `borrame.txt` para detalles.
-- **Toggle dark mode + responsive mejorado** (2026-03-11): Toggle manual de tema (light/dark/auto) en header con persistencia localStorage. Migrado app-dark-mode.css de `@media prefers-color-scheme` a `html[data-theme="dark"]`. Script FOUC-prevention en `<head>`. Responsive: card-title/page-title centralizados en app-forms.css, form-row-flex collapse (600px), mini-cards responsive en desktop.css. Rediseño tarjetas móvil (600px): tabla→cards CSS-only, mini-cards swipe, filtros touch-friendly 44px. Limpieza duplicados responsive en desktop.css/tarjetas.css/backajustes.css. Ver `borrame.txt` para detalles.
-- **Mejora estética completa** (2026-03-11): Expandidos design tokens (grises, sombras, radios, transiciones, spacing). Reemplazados ~80 grises hardcodeados → variables CSS en 11 archivos. Cards con acento verde + sombras multinivel. Sidebar pill indicator (Discord). Header glassmorphism translúcido. Botones con :disabled/:focus-visible. Focus-visible global. Dark mode automático (`app-dark-mode.css`). `prefers-reduced-motion` global. Ver `borrame.txt` para detalles.
-- **Refactorización CSS completada** (2026-03-11): Extraídos estilos compartidos a 5 archivos app-*.css. Eliminado backstyle.css (duplicado de landing.css). Reducidos desktop.css (-57%), tarjetas.css (-62%), backajustes.css (-46%), api-estadisticas.css (-47%). Migrados ~40 inline styles en Blade a clases CSS. setup.blade.php: <style> inline movido a setup.css. Total CSS: 232KB → 150KB (-35%). Ver `borrame.txt` para detalles.
-- **Modularización JS completada** (2026-03-11): Integración de core/ y modules/ en layout y páginas. Eliminados archivos legacy (app-base.js, formatters.js raíz, notifications.js raíz) y directorios vacíos (modal/, pages/, auth-user/, standalone/). desktop.js y tarjetas.js refactorizados para usar apiRequest() y initDragAndDrop(). setup.js refactorizado con apiRequest() y parseExpirationDate(). Ver `borrame.txt` para detalles.
-- Migración landing page a Blade, eliminación de servicio frontend y directorio `frontend/` (2026-03-07)
-- Navegación SPA-like con `pjax-nav.js` para las 4 páginas de app
-- Accesibility features fixed (2026-03-07)
-- Video optimizado y subtítulos VTT añadidos (2026-03-07)
-
-## Pending Changes Log
-
-(Sin cambios pendientes)
+- **v2.4.0** (2026-03-12) — Tags por usuario (user_id FK), validación saldo en sobres, índices compuestos en movements, fix crear múltiples metas
+- **v2.3.0** (2026-03-12) — Número completo y CVC cifrados en tarjetas, reveal con contraseña, limpieza de ~80 comentarios ucraniano→español, eliminación código muerto, validación caducidad, timeout PJAX, fix setup wizard, fix importe negativo movimientos, fix botón añadir tarjeta
+- **v2.2.1** (2026-03-12) — Rediseño "Mis Tarjetas" (layout 2-col, carrusel, panel detalle con stats)
+- **v2.2.0** (2026-03-11) — Dark mode toggle (light/dark/auto), responsive mejorado, mejora estética completa, modularización JS (core/ + modules/), refactorización CSS (-35%)
+- **v2.1.0** (2026-03-07) — Migración landing a Blade, eliminación frontend/, navegación SPA-like (pjax-nav.js), accesibilidad, video con subtítulos VTT
+- **v2.0.0** — Lanzamiento inicial

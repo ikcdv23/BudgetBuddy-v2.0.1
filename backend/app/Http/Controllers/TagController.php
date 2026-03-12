@@ -9,37 +9,46 @@ use Illuminate\Support\Facades\Auth;
 class TagController extends Controller
 {
     /**
-     * Obtener todas las etiquetas
+     * Obtener las etiquetas del usuario autenticado
      */
     public function index()
     {
-        $tags = Tag::orderBy('created_at', 'desc')->limit(100)->get();
+        $tags = Tag::where('user_id', Auth::id())
+            ->orderBy('created_at', 'desc')
+            ->limit(100)
+            ->get();
+
         return response()->json($tags);
     }
 
     /**
-     * Crear nueva etiqueta (requiere autenticacion)
+     * Crear nueva etiqueta para el usuario autenticado
      */
     public function store(Request $request)
     {
-        if (!Auth::check()) {
-            return response()->json(['message' => 'No autorizado'], 403);
-        }
-
-        // Limitar cantidad de tags globales para evitar spam
-        if (Tag::count() >= 200) {
+        // Limitar etiquetas por usuario
+        if (Tag::where('user_id', Auth::id())->count() >= 50) {
             return response()->json([
-                'message' => 'Se ha alcanzado el limite maximo de etiquetas'
+                'message' => 'Has alcanzado el límite máximo de etiquetas (50)'
             ], 422);
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:100|unique:tags,name',
+            'name' => 'required|string|max:100',
             'color' => 'nullable|string|max:7|regex:/^#[A-Fa-f0-9]{6}$/',
             'icon' => 'nullable|string|max:50|alpha_dash'
         ]);
 
+        // Verificar nombre único por usuario
+        if (Tag::where('user_id', Auth::id())->where('name', $validated['name'])->exists()) {
+            return response()->json([
+                'message' => 'Ya tienes una etiqueta con ese nombre',
+                'errors' => ['name' => ['Ya tienes una etiqueta con ese nombre']]
+            ], 422);
+        }
+
         $tag = Tag::create([
+            'user_id' => Auth::id(),
             'name' => $validated['name'],
             'color' => $validated['color'] ?? '#cccccc',
             'icon' => $validated['icon'] ?? 'tag'
@@ -52,19 +61,34 @@ class TagController extends Controller
     }
 
     /**
-     * Actualizar etiqueta (requiere autenticacion)
+     * Actualizar etiqueta (solo si pertenece al usuario)
      */
     public function update(Request $request, Tag $tag)
     {
-        if (!Auth::check()) {
+        if ($tag->user_id !== Auth::id()) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:100|unique:tags,name,' . $tag->id,
+            'name' => 'sometimes|string|max:100',
             'color' => 'sometimes|string|max:7|regex:/^#[A-Fa-f0-9]{6}$/',
             'icon' => 'sometimes|string|max:50|alpha_dash'
         ]);
+
+        // Verificar nombre único por usuario (excluyendo el tag actual)
+        if (isset($validated['name'])) {
+            $exists = Tag::where('user_id', Auth::id())
+                ->where('name', $validated['name'])
+                ->where('id', '!=', $tag->id)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Ya tienes una etiqueta con ese nombre',
+                    'errors' => ['name' => ['Ya tienes una etiqueta con ese nombre']]
+                ], 422);
+            }
+        }
 
         $tag->update($validated);
 
@@ -75,11 +99,11 @@ class TagController extends Controller
     }
 
     /**
-     * Eliminar etiqueta (requiere autenticacion)
+     * Eliminar etiqueta (solo si pertenece al usuario)
      */
     public function destroy(Tag $tag)
     {
-        if (!Auth::check()) {
+        if ($tag->user_id !== Auth::id()) {
             return response()->json(['message' => 'No autorizado'], 403);
         }
 
@@ -97,10 +121,14 @@ class TagController extends Controller
     }
 
     /**
-     * Mostrar una etiqueta específica
+     * Mostrar una etiqueta específica (solo si pertenece al usuario)
      */
     public function show(Tag $tag)
     {
+        if ($tag->user_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
         return response()->json($tag);
     }
 }

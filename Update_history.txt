@@ -1,4 +1,71 @@
 ============================================================
+  v2.4.0 — TAGS POR USUARIO, VALIDACIÓN SOBRES E ÍNDICES DB
+  (2026-03-12)
+============================================================
+
+RESUMEN:
+Etiquetas ahora son por usuario (cada usuario tiene las suyas).
+Validación de saldo al asignar dinero a sobres/metas. Índices
+compuestos en movements para rendimiento de consultas. Fix bug
+que impedía crear más de una meta financiera.
+
+------------------------------------------------------------
+ARCHIVOS CREADOS:
+------------------------------------------------------------
+1. backend/database/migrations/2026_03_12_210000_add_user_id_to_tags_and_indexes.php
+   → Añade user_id (FK → users) a tabla tags
+   → Índice unique compuesto (user_id, name)
+   → Índice compuesto movements(account_id, date)
+   → Índice compuesto movements(account_id, type)
+
+------------------------------------------------------------
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+
+--- FEATURE: Tags por usuario ---
+
+2. backend/app/Models/Tag.php
+   → $fillable: añadido user_id
+   → Nueva relación user() belongsTo(User)
+
+3. backend/app/Http/Controllers/TagController.php
+   → index(): filtra por Auth::id() (antes mostraba todos)
+   → store(): asigna user_id, verifica nombre único por usuario
+   → update(): verifica propiedad via user_id
+   → destroy(): verifica propiedad via user_id
+   → show(): verifica propiedad via user_id
+   → Límite: 50 tags por usuario (antes 200 globales)
+
+4. backend/database/seeders/TagsTableSeeder.php
+   → Asigna tags de ejemplo al primer usuario
+
+5. backend/database/seeders/DatabaseSeeder.php
+   → Ejecuta TagsTableSeeder después de crear el User
+
+--- FEATURE: Validación de saldo en sobres ---
+
+6. backend/app/Http/Controllers/EnvelopeController.php
+   → store(): valida que suma de allocations no exceda current_balance
+   → update(): misma validación (excluyendo sobre actual)
+   → allocated_amount cambiado de required a nullable (default 0)
+   → Mensajes de error con importes exactos
+
+--- FIX: Crear múltiples metas ---
+
+7. backend/public/js/desktop.js
+   → allocated_amount default a "0" si campo vacío
+   → Error del backend se muestra al usuario (no genérico)
+
+--- DOCS ---
+
+8. CLAUDE.md
+   → Instructions movido al principio, expandido con reglas de workflow
+   → Tag actualizado: per-user con límite 50
+   → Envelope actualizado: validación de saldo
+   → Last Changes Log condensado a Changelog Summary (5 líneas)
+   → Eliminada sección "Pending Changes Log" vacía
+
+============================================================
   v2.3.0 — MEJORAS DE CALIDAD Y SEGURIDAD (2026-03-12)
 ============================================================
 

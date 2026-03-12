@@ -771,7 +771,7 @@ if (saveGoalBtn) {
 		const id = document.getElementById("goal-id").value;
 		const name = document.getElementById("goal-name").value;
 		const target = document.getElementById("goal-target").value;
-		const current = document.getElementById("goal-current").value;
+		const current = document.getElementById("goal-current").value || "0";
 
 		// Obtener icono seleccionado
 		const selectedIconDiv = document.querySelector(
@@ -819,7 +819,8 @@ if (saveGoalBtn) {
 		} catch (error) {
 			goalModal.close();
 			console.error(error);
-			showNotification("Error al guardar meta", "error");
+			var msg = (error && error.message) ? error.message : "Error al guardar meta";
+			showNotification(msg, "error");
 		} finally {
 			saveGoalBtn.disabled = false;
 			saveGoalBtn.innerHTML = originalText;

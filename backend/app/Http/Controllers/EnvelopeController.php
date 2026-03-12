@@ -14,21 +14,10 @@ class EnvelopeController extends Controller
      */
     public function index()
     {
-        // 1. Obtenemos los IDs de las cuentas del usuario
         $accountIds = Auth::user()->accounts->pluck('id');
-
-        // 2. Buscamos los sobres asociados a esas cuentas
         $envelopes = Envelope::whereIn('account_id', $accountIds)->get();
 
         return response()->json($envelopes);
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
     }
 
     /**
@@ -39,35 +28,32 @@ class EnvelopeController extends Controller
         $validated = $request->validate([
             'account_id' => 'required|exists:accounts,id',
             'name' => 'required|string|max:50',
-            'allocated_amount' => 'required|numeric|min:0',
+            'allocated_amount' => 'nullable|numeric|min:0',
             'target_amount' => 'required|numeric|min:0',
             'icon' => 'required|string'
         ]);
 
-        // Verificar propiedad
+        $validated['allocated_amount'] = $validated['allocated_amount'] ?? 0;
+
+        // Verificar propiedad de la cuenta
         $account = Account::where('id', $validated['account_id'])
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
+        // Validar que la asignación no exceda el saldo disponible
+        $currentAllocated = Envelope::where('account_id', $account->id)->sum('allocated_amount');
+        $newTotal = $currentAllocated + $validated['allocated_amount'];
+
+        if ($newTotal > $account->current_balance) {
+            return response()->json([
+                'message' => 'La asignación total (' . number_format($newTotal, 2) . '€) supera el saldo de la cuenta (' . number_format($account->current_balance, 2) . '€)',
+                'errors' => ['allocated_amount' => ['No hay saldo suficiente en la cuenta para esta asignación']]
+            ], 422);
+        }
+
         $envelope = Envelope::create($validated);
 
         return response()->json(['message' => 'Sobre creado', 'envelope' => $envelope], 201);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Envelope $envelope)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Envelope $envelope)
-    {
-        //
     }
 
     /**
@@ -87,15 +73,33 @@ class EnvelopeController extends Controller
             'icon'             => 'nullable|string'
         ]);
 
+        $newAllocated = $validated['allocated_amount'] ?? 0;
+
+        // Validar que la asignación no exceda el saldo disponible
+        // (excluir el sobre actual del cálculo)
+        $account = $envelope->account;
+        $otherAllocated = Envelope::where('account_id', $account->id)
+            ->where('id', '!=', $envelope->id)
+            ->sum('allocated_amount');
+        $newTotal = $otherAllocated + $newAllocated;
+
+        if ($newTotal > $account->current_balance) {
+            return response()->json([
+                'message' => 'La asignación total (' . number_format($newTotal, 2) . '€) supera el saldo de la cuenta (' . number_format($account->current_balance, 2) . '€)',
+                'errors' => ['allocated_amount' => ['No hay saldo suficiente en la cuenta para esta asignación']]
+            ], 422);
+        }
+
         $envelope->update([
             'name'             => $validated['name'],
             'target_amount'    => $validated['target_amount'],
-            'allocated_amount' => $validated['allocated_amount'] ?? 0,
+            'allocated_amount' => $newAllocated,
             'icon'             => $validated['icon']
         ]);
 
         return response()->json(['message' => 'Meta actualizada', 'envelope' => $envelope]);
     }
+
     /**
      * Remove the specified resource from storage.
      */

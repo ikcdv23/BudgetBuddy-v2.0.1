@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Tag extends Model
@@ -11,15 +12,22 @@ class Tag extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name',     // #Viaje, #Urgente
-        'color',    // Color de la etiqueta
+        'user_id',
+        'name',
+        'color',
         'icon'
     ];
 
     /**
-     * RELACIÓN N:M CON MOVEMENTS
-     * Una etiqueta puede estar en muchos movimientos
-     * Un movimiento puede tener muchas etiquetas
+     * Relación con el usuario propietario
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relación N:M con movements
      */
     public function movements(): BelongsToMany
     {

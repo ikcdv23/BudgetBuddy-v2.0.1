@@ -6,7 +6,7 @@
 
 **App de finanzas personales para estudiantes**
 
-[![Version](https://img.shields.io/badge/version-v2.3.0-green)]()
+[![Version](https://img.shields.io/badge/version-v2.4.0-green)]()
 [![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white)]()
 [![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)]()
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)]()
@@ -71,6 +71,13 @@ docker compose up -d --build
 > La primera ejecución genera automáticamente el `.env` de Laravel y ejecuta migraciones.
 
 ## Novedades
+
+### v2.4.0 — 12 Mar 2026
+
+- **Etiquetas por usuario**: cada usuario tiene sus propias etiquetas (antes eran globales compartidas). Limite de 50 por usuario. Nombre unico por usuario.
+- **Validacion de saldo en sobres**: al crear o editar una meta financiera, se valida que la suma de asignaciones no exceda el saldo de la cuenta.
+- **Indices de base de datos**: indices compuestos en `movements(account_id, date)` y `movements(account_id, type)` para mejorar rendimiento de consultas.
+- **Fix crear multiples metas**: el campo "Ahorrado" vacio provocaba un error 422 silencioso al crear la segunda meta.
 
 ### v2.3.0 — 12 Mar 2026
 

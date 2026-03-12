@@ -2,17 +2,20 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Tag;
+use App\Models\User;
 
 class TagsTableSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-// database/seeders/TagsTableSeeder.php
     public function run(): void
     {
+        $user = User::first();
+        if (!$user) return;
+
         $tags = [
             ['name' => 'Gimnasio', 'color' => '#34d399', 'icon' => 'dumbbell'],
             ['name' => 'Internet', 'color' => '#60a5fa', 'icon' => 'wifi'],
@@ -27,7 +30,7 @@ class TagsTableSeeder extends Seeder
         ];
 
         foreach ($tags as $tag) {
-            \App\Models\Tag::create($tag);
+            Tag::create(array_merge($tag, ['user_id' => $user->id]));
         }
     }
 }
