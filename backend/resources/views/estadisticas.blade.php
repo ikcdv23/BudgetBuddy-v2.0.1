@@ -3,7 +3,6 @@
 @section('title', 'Estadísticas de Mercado')
 
 @push('styles')
-<link rel="stylesheet" href="{{ asset('css/desktop.css') }}" />
 <link rel="stylesheet" href="{{ asset('css/api-estadisticas.css') }}" />
 @endpush
 

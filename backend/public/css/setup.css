@@ -1,17 +1,19 @@
 /* Estilos específicos para el Wizard (Mobile First) */
 body {
-	background-color: var(--secondary);
+	background-color: var(--gray-100);
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	min-height: 100vh;
 	padding: 20px;
+	font-family: 'Inter', 'Roboto', sans-serif;
+	color: var(--text-main);
 }
 
 .wizard-container {
-	background-color: var(--white);
-	border-radius: var(--radius);
-	box-shadow: var(--shadow);
+	background-color: var(--surface-0);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-lg);
 	width: 100%;
 	max-width: 500px; /* En móvil ocupa todo, en escritorio se limita */
 	overflow: hidden;
@@ -67,23 +69,40 @@ body {
 	left: 15px;
 	top: 50%;
 	transform: translateY(-50%);
-	color: var(--text-light);
+	color: var(--text-muted);
 }
 
 .form-group input {
 	width: 100%;
 	padding: 12px 15px 12px 40px; /* Espacio para el icono */
-	border: 1px solid #e5e7eb;
+	border: 1px solid var(--gray-200);
 	border-radius: 8px;
 	font-size: 1rem;
 	transition: border-color 0.3s, box-shadow 0.3s;
+	font-family: "Inter", sans-serif;
+	background-color: var(--surface-0);
+	color: var(--text-main);
+}
+
+.form-group select {
+	background-color: var(--surface-0);
+	color: var(--text-main);
+	border: 1px solid var(--gray-200);
+	padding: 12px 15px;
+	font-size: 1rem;
 	font-family: "Inter", sans-serif;
 }
 
 .form-group input:focus {
 	outline: none;
 	border-color: var(--primary);
-	box-shadow: 0 0 0 3px rgba(33, 122, 74, 0.1);
+	box-shadow: 0 0 0 3px var(--primary-subtle);
+}
+
+.form-group select:focus {
+	outline: none;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px var(--primary-subtle);
 }
 
 .step-indicator {
@@ -96,7 +115,7 @@ body {
 .step-dot {
 	width: 10px;
 	height: 10px;
-	background-color: #e5e7eb;
+	background-color: var(--gray-200);
 	border-radius: 50%;
 }
 
@@ -107,14 +126,14 @@ body {
 
 /* Estilo para el selector de país */
 .country-select {
-	background: #f3f4f6;
-	border: 1px solid #e5e7eb;
-	border-right: 1px solid #d1d5db; /* Separador sutil */
+	background: var(--gray-100);
+	border: 1px solid var(--gray-200);
+	border-right: 1px solid var(--gray-300); /* Separador sutil */
 	border-top-left-radius: 8px;
 	border-bottom-left-radius: 8px;
 	padding: 0 10px 0 35px; /* Espacio a la izq para el icono del mundo */
 	font-weight: 600;
-	color: #374151;
+	color: var(--gray-700);
 	cursor: pointer;
 	outline: none;
 	appearance: none; /* Quita estilo por defecto del navegador */
@@ -141,7 +160,103 @@ body {
 	box-shadow: none; /* Opcional */
 }
 
-/* Animación de entrada */
+/* =========================================== */
+/* WIZARD STEPS */
+/* =========================================== */
+.step-content {
+    display: none;
+    animation: fadeIn 0.4s ease-out;
+}
+.step-content.active {
+    display: block;
+}
+
+.wizard-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+    gap: 10px;
+}
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--primary);
+    color: var(--primary);
+}
+
+/* =========================================== */
+/* TOGGLE SWITCH */
+/* =========================================== */
+.skip-toggle {
+    background: var(--gray-100);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    border: 1px solid var(--gray-200);
+}
+.skip-toggle.active {
+    background: var(--primary-subtle);
+    border-color: var(--primary);
+}
+
+/* =========================================== */
+/* ICON GRID */
+/* =========================================== */
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+.icon-grid .icon-option {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--gray-500);
+    transition: all 0.2s;
+}
+.icon-grid .icon-option:hover {
+    background: var(--gray-50);
+}
+.icon-grid .icon-option.selected {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+/* =========================================== */
+/* COLOR PICKER (setup) */
+/* =========================================== */
+.color-picker-container {
+    display: flex;
+    gap: 10px;
+    margin-block-start: 10px;
+}
+
+.color-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.color-circle.selected {
+    border-color: var(--text-main);
+    transform: scale(1.15);
+}
+
+/* =========================================== */
+/* ANIMATIONS */
+/* =========================================== */
 @keyframes slideUpFade {
 	from {
 		opacity: 0;
@@ -151,4 +266,15 @@ body {
 		opacity: 1;
 		transform: translateY(0);
 	}
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

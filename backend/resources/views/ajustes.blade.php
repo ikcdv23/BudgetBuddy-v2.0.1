@@ -62,7 +62,7 @@
                         <div class="form-group">
                             <label for="first-name">Nombre</label>
                             <input type="text" name="first_name" id="first-name" class="editable-input" value="{{ old('first_name', $user->name) }}" required>
-                            @error('first_name') <span style="color:red; font-size:12px;">{{ $message }}</span> @enderror
+                            @error('first_name') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group">
                             <label for="last-name">Apellido</label>
@@ -72,7 +72,7 @@
                     <div class="form-group">
                         <label for="email">Correo electrónico</label>
                         <input type="email" name="email" id="email" class="editable-input" value="{{ old('email', $user->email) }}" required>
-                        @error('email') <span style="color:red; font-size:12px;">{{ $message }}</span> @enderror
+                        @error('email') <span class="text-danger text-sm">{{ $message }}</span> @enderror
                     </div>
                     <div class="form-group">
                         <label for="phone">Teléfono</label>
@@ -91,7 +91,7 @@
                         </div>
                     </div>
 
-                    @if ($errors->any()) <div id="form-has-errors" style="display:none"></div> @endif
+                    @if ($errors->any()) <div id="form-has-errors" class="hidden"></div> @endif
 
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="cancel-edit-btn">Cancelar</button>

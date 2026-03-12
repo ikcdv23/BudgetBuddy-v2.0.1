@@ -20,7 +20,7 @@ All traffic goes through Nginx → backend:8000. The landing page (`/`) is a sta
 - **Components**: `components/app-header.blade.php`, `components/sidebar-nav.blade.php`, `components/mobile-nav.blade.php` — reusable nav with `$active` prop (string: 'desktop', 'estadisticas', 'misTarjetas', 'ajustes') for active state.
 - **Pages that extend the layout** (pass `$currentPage` from route/controller):
   - `desktop.blade.php` — Dashboard: cuentas, tarjetas vinculadas, etiquetas, metas. JS: `desktop.js`. Modals: account, card, tag, goal, transfer.
-  - `misTarjetas.blade.php` — Gestión de tarjetas + movimientos. JS: `tarjetas.js`. Modals: card, movement.
+  - `misTarjetas.blade.php` — Gestión de tarjetas + movimientos. Layout 2-col: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width debajo. JS: `tarjetas.js` (incluye `renderCardDetail()`). Modals: card, movement.
   - `estadisticas.blade.php` — Dashboard educativo de mercado (ETFs). JS: `api-estadisticas.js` + Chart.js CDN.
   - `ajustes.blade.php` — Perfil de usuario. JS: `backajustes.js`. Served from `ProfileController@show` which passes `$user` and `$currentPage`.
 - **Standalone pages** (no layout):
@@ -134,9 +134,21 @@ Nginx is a simple reverse proxy — all traffic (`location /`) goes to `backend:
 ```
 backend/
   public/
-    css/          ← landing.css, backstyle.css, backajustes.css, desktop.css, tarjetas.css,
-                    api-estadisticas.css, notification.css, setup.css, invoices-modal.css
-    js/           ← landing.js, formatters.js, notifications.js, desktop.js, tarjetas.js,
+    css/          ← Compartidos: app-variables.css, app-dark-mode.css, app-layout.css,
+                    app-modals.css, app-forms.css, app-utilities.css, notification.css
+                    Página: desktop.css, tarjetas.css, backajustes.css,
+                    api-estadisticas.css, setup.css, invoices-modal.css
+                    Standalone: landing.css
+    js/
+      core/       ← Módulos compartidos cargados en el layout:
+                    formatters.js (auto-formateo inputs: IBAN, phone, digits)
+                    utils.js (getCookie, escapeHTML, formatDate, formatCurrency, parseExpirationDate, showNotification, loadUserProfile)
+                    api-client.js (apiRequest: CSRF automático, 401→redirect, 422→validation errors)
+                    theme-toggle.js (toggle tema light/dark/auto, localStorage, FOUC prevention)
+                    notifications.js (popup campana del header)
+      modules/    ← Módulos funcionales reutilizables:
+                    drag-drop.js (drag & drop genérico con zona de eliminar)
+      (raíz)      ← Scripts de página: landing.js, desktop.js, tarjetas.js,
                     api-estadisticas.js, setup.js, backajustes.js, pjax-nav.js, invoices-modal.js
     images/       ← logo_budget.png, logo_budget_expand.png, logo.png, card chip.png, visa.png, etc.
     video/        ← Video-budgetbuddy.mp4, subtitulos_es.vtt
@@ -149,6 +161,41 @@ backend/
     api.php       ← API routes (Sanctum)
 ```
 
-## Recent Changes Log
+### CSS Architecture
+- **Layout** (`budgetbuddy.blade.php`) carga CSS compartidos: `app-variables.css` → `app-dark-mode.css` → `app-layout.css` → `app-modals.css` → `app-forms.css` → `app-utilities.css` → `notification.css` → `@stack('styles')` (page CSS)
+- `app-variables.css`: Design tokens `:root` — escala de grises (--gray-50→900), sombras (6 niveles), radios, transiciones, superficies, acentos suaves, spacing. Incluye `@media (prefers-reduced-motion: reduce)`.
+- `app-dark-mode.css`: Dark mode via `html[data-theme="dark"]` — sobrescribe variables y estilos de todos los componentes. Toggle manual en header (3 estados: light/dark/auto).
+- `app-layout.css`: Body, header (glassmorphism), sidebar (pill indicator), mobile-nav, containers, media queries compartidas
+- `app-modals.css`: Sistema `<dialog>` (.tag-modal) usado por desktop y tarjetas. **Nota**: ajustes usa un sistema de modales DIFERENTE (div overlay con header verde)
+- `app-forms.css`: Formularios, cards (border-top acento verde + shadow-md), grid, page-header, botones (con :disabled y :focus-visible), selectores de tipo
+- `app-utilities.css`: Clases utilitarias (.hidden, .d-flex, .text-danger, .btn-add-circle, .form-row-flex, etc.) + focus-visible global + responsive .form-row-flex collapse (600px)
+- **Standalone pages** (`setup.blade.php`) cargan `app-variables.css` + `app-dark-mode.css` + `app-utilities.css` + `app-forms.css` + su CSS propio
+- `pjax-nav.js` filtra CSS compartidos (baseStyles incluye app-dark-mode) vs. CSS de página para swap en navegación SPA
 
-`borrame.txt` in project root contains a detailed changelog of migrations.
+### JS Module Architecture
+- **Layout** (`budgetbuddy.blade.php`) carga en orden: `core/formatters.js` → `core/utils.js` → `core/api-client.js` → `core/theme-toggle.js` → `core/notifications.js` → `modules/drag-drop.js` → `@stack('scripts')` (page JS) → `pjax-nav.js`
+- **Theme toggle**: Script FOUC-prevention inline en `<head>` (antes de CSS) aplica `data-theme` a `<html>`. `theme-toggle.js` maneja el ciclo light→dark→auto→light, persiste en `localStorage('bb-theme')`, escucha cambios OS para modo auto. Botón en header (#theme-toggle-btn) con iconos fa-sun/fa-moon/fa-circle-half-stroke.
+- **Standalone pages** (`setup.blade.php`) cargan manualmente los core modules que necesitan antes de su script de página.
+- Todos los módulos exportan a `window.*` para compatibilidad con las IIFEs de página.
+- `apiRequest(url, method, data)` centraliza: CSRF cookie automático para mutaciones, headers con XSRF-TOKEN, manejo de 401 (redirect login) y 422 (throw con mensajes de validación). No muestra notificación propia — cada caller maneja su UI.
+- `initDragAndDrop(config)` acepta selectores + callbacks, reemplaza implementaciones inline en desktop.js y tarjetas.js.
+
+## Instructions
+
+- Despues de cada cambio o modificaicon importante mantener CLAUDE.md actualizado y al dia, lo más completo posible 
+
+## Last Changes Log
+
+- **Rediseño completo "Mis Tarjetas"** (2026-03-12): Layout 2-col desktop: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width independiente debajo. `renderCardDetail(card)` en tarjetas.js: muestra alias, tipo, últimos 4 dígitos, caducidad, cuenta vinculada, y grid 2×2 de stats (saldo, movimientos, gastos, ingresos). Highlight `.selected` en mini-card activa. Dark mode para nuevos componentes. Responsive ≤992px: 1 columna. ≤600px: panel compacto. Ver `borrame.txt` para detalles.
+- **Toggle dark mode + responsive mejorado** (2026-03-11): Toggle manual de tema (light/dark/auto) en header con persistencia localStorage. Migrado app-dark-mode.css de `@media prefers-color-scheme` a `html[data-theme="dark"]`. Script FOUC-prevention en `<head>`. Responsive: card-title/page-title centralizados en app-forms.css, form-row-flex collapse (600px), mini-cards responsive en desktop.css. Rediseño tarjetas móvil (600px): tabla→cards CSS-only, mini-cards swipe, filtros touch-friendly 44px. Limpieza duplicados responsive en desktop.css/tarjetas.css/backajustes.css. Ver `borrame.txt` para detalles.
+- **Mejora estética completa** (2026-03-11): Expandidos design tokens (grises, sombras, radios, transiciones, spacing). Reemplazados ~80 grises hardcodeados → variables CSS en 11 archivos. Cards con acento verde + sombras multinivel. Sidebar pill indicator (Discord). Header glassmorphism translúcido. Botones con :disabled/:focus-visible. Focus-visible global. Dark mode automático (`app-dark-mode.css`). `prefers-reduced-motion` global. Ver `borrame.txt` para detalles.
+- **Refactorización CSS completada** (2026-03-11): Extraídos estilos compartidos a 5 archivos app-*.css. Eliminado backstyle.css (duplicado de landing.css). Reducidos desktop.css (-57%), tarjetas.css (-62%), backajustes.css (-46%), api-estadisticas.css (-47%). Migrados ~40 inline styles en Blade a clases CSS. setup.blade.php: <style> inline movido a setup.css. Total CSS: 232KB → 150KB (-35%). Ver `borrame.txt` para detalles.
+- **Modularización JS completada** (2026-03-11): Integración de core/ y modules/ en layout y páginas. Eliminados archivos legacy (app-base.js, formatters.js raíz, notifications.js raíz) y directorios vacíos (modal/, pages/, auth-user/, standalone/). desktop.js y tarjetas.js refactorizados para usar apiRequest() y initDragAndDrop(). setup.js refactorizado con apiRequest() y parseExpirationDate(). Ver `borrame.txt` para detalles.
+- Migración landing page a Blade, eliminación de servicio frontend y directorio `frontend/` (2026-03-07)
+- Navegación SPA-like con `pjax-nav.js` para las 4 páginas de app
+- Accesibility features fixed (2026-03-07)
+- Video optimizado y subtítulos VTT añadidos (2026-03-07)
+
+## Pending Changes Log
+
+(Sin cambios pendientes)

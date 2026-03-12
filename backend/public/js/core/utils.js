@@ -1,5 +1,5 @@
 /**
- * app-base.js — Utilidades compartidas para todas las páginas de BudgetBuddy
+ * core/utils.js — Utilidades compartidas para todas las páginas de BudgetBuddy
  *
  * Se carga UNA vez en el layout (antes de notifications.js y los scripts de página).
  * Exporta funciones a window para que sean accesibles desde cualquier IIFE de página.
@@ -10,8 +10,8 @@
     // ========== UTILIDADES GENERALES ==========
 
     function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
+        var value = '; ' + document.cookie;
+        var parts = value.split('; ' + name + '=');
         if (parts.length === 2)
             return decodeURIComponent(parts.pop().split(';').shift());
     }
@@ -28,7 +28,7 @@
 
     function formatDate(dateString) {
         try {
-            const date = new Date(dateString);
+            var date = new Date(dateString);
             return date.toLocaleDateString('es-ES', {
                 day: 'numeric',
                 month: 'short',
@@ -37,6 +37,39 @@
         } catch (e) {
             return dateString;
         }
+    }
+
+    function formatCurrency(amount) {
+        if (amount === undefined || amount === null || isNaN(amount)) amount = 0;
+        return new Intl.NumberFormat('es-ES', {
+            style: 'currency',
+            currency: 'EUR',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(amount);
+    }
+
+    /**
+     * Parsea una fecha de caducidad en múltiples formatos.
+     * Acepta: "2026-03", "03/26", "03/2026"
+     * Devuelve: "2026-03-01" o null si inválido
+     */
+    function parseExpirationDate(input) {
+        if (!input) return null;
+
+        // Caso A: Formato nativo (Chrome month input) -> YYYY-MM
+        if (/^\d{4}-\d{2}$/.test(input)) {
+            return input + '-01';
+        }
+        // Caso B: Escrito a mano -> MM/YYYY o MM/YY
+        if (/^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/.test(input)) {
+            var parts = input.split('/');
+            var month = parts[0];
+            var year = parts[1].length === 2 ? '20' + parts[1] : parts[1];
+            return year + '-' + month + '-01';
+        }
+        // Formato no reconocido
+        return null;
     }
 
     // ========== NOTIFICACIONES (Toast) ==========
@@ -124,12 +157,10 @@
     // ========== PERFIL DE USUARIO (Avatar) ==========
 
     // Cache del perfil — se carga UNA vez y se reutiliza en navegaciones PJAX
-    // (el header no se recarga, así que no hace falta re-fetch)
     var userProfileCache = null;
 
     function loadUserProfile() {
         if (userProfileCache) {
-            // Ya tenemos los datos — actualizar avatar por si acaso
             updateAvatarUI(userProfileCache.name);
             return Promise.resolve(userProfileCache);
         }
@@ -179,6 +210,8 @@
     window.getCookie = getCookie;
     window.escapeHTML = escapeHTML;
     window.formatDate = formatDate;
+    window.formatCurrency = formatCurrency;
+    window.parseExpirationDate = parseExpirationDate;
     window.showNotification = showNotification;
     window.loadUserProfile = loadUserProfile;
     window.updateAvatarUI = updateAvatarUI;

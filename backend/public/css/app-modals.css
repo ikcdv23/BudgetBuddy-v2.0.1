@@ -1,0 +1,186 @@
+/* app-modals.css - Modales <dialog> compartidos (desktop y tarjetas) */
+
+/* =========================================== */
+/* MODAL DIALOG (CLEAN DESIGN) */
+/* =========================================== */
+
+/* La Ventana Principal */
+.tag-modal {
+    border: none;
+    border-radius: var(--radius-2xl);
+    padding: 0;
+    width: 95%;
+    max-width: 480px;
+    box-shadow: var(--shadow-2xl);
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    overflow: hidden;
+    background: var(--surface-0);
+    z-index: 10000;
+}
+
+/* El Fondo detrás del modal */
+.tag-modal::backdrop {
+    background-color: rgba(31, 41, 55, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Animación de entrada */
+.tag-modal[open] {
+    animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -40%) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+/* Contenido del modal */
+.tag-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+/* Cabecera */
+.tag-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    background-color: var(--surface-0);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.tag-modal .modal-header h3 {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.tag-modal .close-modal {
+    background: var(--gray-100);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--gray-500);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all var(--transition-normal);
+}
+
+.tag-modal .close-modal:hover {
+    background-color: var(--gray-200);
+    color: var(--gray-900);
+}
+
+/* Cuerpo */
+.tag-modal .modal-body {
+    padding: 2rem;
+    background-color: var(--surface-0);
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Pie de página (Botones) */
+.tag-modal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 1.5rem 2rem;
+    background-color: var(--surface-0);
+    border-top: none;
+}
+
+/* =========================================== */
+/* SELECTORES VISUALES (Iconos y Colores) */
+/* =========================================== */
+.icon-picker,
+.color-picker {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.icon-option,
+.color-option {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.icon-option:hover,
+.color-option:hover {
+    border-color: var(--gray-700);
+    transform: scale(1.2);
+}
+
+.icon-option.selected,
+.color-option.selected {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================================== */
+/* RESPONSIVE MODALES */
+/* =========================================== */
+@media (max-width: 768px) {
+    .tag-modal {
+        width: 90%;
+        max-width: 400px;
+    }
+
+    .tag-modal .modal-header {
+        padding: 1.25rem 1.5rem;
+    }
+
+    .tag-modal .modal-body {
+        padding: 1.5rem;
+    }
+
+    .tag-modal .modal-footer {
+        padding: 1.25rem 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .tag-modal {
+        width: 95%;
+        max-width: 320px;
+    }
+
+    .tag-modal .modal-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .tag-modal .modal-body {
+        padding: 1.25rem;
+    }
+
+    .tag-modal .modal-footer {
+        padding: 1rem 1.25rem;
+    }
+}

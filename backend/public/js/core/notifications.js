@@ -1,5 +1,5 @@
 // notifications.js - Sistema de notificaciones (popup campana)
-// showNotification() se define en app-base.js (accesible globalmente)
+// showNotification() se define en core/utils.js (accesible globalmente)
 
 (function() {
     // ===========================================

@@ -132,7 +132,7 @@
      * (los que no son backstyle.css, notification.css, ni CDNs)
      */
     function extractPageStyles(doc) {
-        const baseStyles = ['backstyle.css', 'notification.css', 'fonts.googleapis', 'font-awesome'];
+        const baseStyles = ['app-variables', 'app-dark-mode', 'app-layout', 'app-modals', 'app-forms', 'app-utilities', 'notification.css', 'fonts.googleapis', 'font-awesome'];
         const links = doc.querySelectorAll('link[rel="stylesheet"]');
         const pageStyles = [];
         links.forEach(link => {
@@ -149,7 +149,7 @@
      * (los que no son formatters.js, notifications.js, pjax-nav.js, ni CDNs de fonts)
      */
     function extractPageScripts(doc) {
-        const baseScripts = ['formatters.js', 'app-base.js', 'notifications.js', 'pjax-nav.js'];
+        const baseScripts = ['core/', 'modules/', 'pjax-nav.js'];
         const scripts = doc.querySelectorAll('script[src]');
         const pageScripts = [];
         scripts.forEach(script => {
@@ -227,7 +227,7 @@
 
     // Marcar los estilos iniciales de página como pjax-managed
     function markInitialPageStyles() {
-        const baseStyles = ['backstyle.css', 'notification.css', 'fonts.googleapis', 'font-awesome'];
+        const baseStyles = ['app-variables', 'app-dark-mode', 'app-layout', 'app-modals', 'app-forms', 'app-utilities', 'notification.css', 'fonts.googleapis', 'font-awesome'];
         document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
             const href = link.getAttribute('href');
             if (!href) return;

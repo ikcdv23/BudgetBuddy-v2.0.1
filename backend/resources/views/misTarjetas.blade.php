@@ -14,70 +14,79 @@
     </h1>
 </div>
 
-<div class="desktop-grid">
-    <section class="desktop-left-column">
-        <!-- Selección de tarjeta -->
-        <div class="card">
-            <div class="card-header-compact">
-                <h2 class="card-title">Tarjeta Principal</h2>
-                <div class="account-selector">
-                    <select id="cardAccountSelect" class="account-dropdown">
-                        <option value="">Cargando tarjetas...</option>
-                    </select>
-                    <div class="dropdown-arrow">
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="cards-section-wrapper">
-                <div id="cards-container" class="dashboard-cards-grid">
-                    <div style="width: 100%; text-align: center; padding: 30px; color: #9ca3af;">
-                        <i class="fas fa-spinner fa-spin"></i> Cargando tarjetas...
-                    </div>
+<!-- Sección superior: 2 columnas (carrusel + detalle) -->
+<div class="tarjetas-top-grid">
+    <!-- Izquierda: carrusel de tarjetas -->
+    <div class="card tarjetas-carousel-card">
+        <div class="card-header-compact">
+            <h2 class="card-title">Mis Tarjetas</h2>
+            <div class="account-selector">
+                <select id="cardAccountSelect" class="account-dropdown">
+                    <option value="">Cargando tarjetas...</option>
+                </select>
+                <div class="dropdown-arrow">
+                    <i class="fas fa-chevron-down"></i>
                 </div>
             </div>
         </div>
 
-        <!-- Transacciones -->
-        <div class="card">
-            <div class="card-header-compact">
-                <div class="transactions-header">
-                    <h2 class="card-title">Transacciones</h2>
-                    <div class="transactions-actions">
-                        <div class="transactions-filters">
-                            <button class="filter-btn active" data-filter="all">Todos</button>
-                            <button class="filter-btn" data-filter="income">Ingresos</button>
-                            <button class="filter-btn" data-filter="expense">Pagos</button>
-                        </div>
-                        <button class="btn-primary" id="createMovementBtn">
-                            <i class="fas fa-plus"></i> Nuevo movimiento
-                        </button>
-                    </div>
+        <div class="cards-section-wrapper">
+            <div id="cards-container" class="dashboard-cards-grid">
+                <div style="width: 100%; text-align: center; padding: 30px; color: #9ca3af;">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando tarjetas...
                 </div>
             </div>
-            <div class="transactions-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>ID</th>
-                            <th>Fecha</th>
-                            <th>Monto</th>
-                            <th>Categorías</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactions-body">
-                        <tr class="loading-row">
-                            <td colspan="5" style="text-align: center; padding: 30px">
-                                <i class="fas fa-spinner fa-spin"></i> Cargando transacciones...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+        </div>
+    </div>
+
+    <!-- Derecha: panel detalle de tarjeta seleccionada -->
+    <div class="card tarjeta-detail-card">
+        <div id="card-detail-panel">
+            <div class="card-detail-empty">
+                <i class="fas fa-credit-card"></i>
+                <p>Selecciona una tarjeta</p>
             </div>
         </div>
-    </section>
+    </div>
+</div>
+
+<!-- Sección inferior: transacciones full-width -->
+<div class="card tarjetas-transactions-card">
+    <div class="card-header-compact">
+        <div class="transactions-header">
+            <h2 class="card-title">Movimientos</h2>
+            <div class="transactions-actions">
+                <div class="transactions-filters">
+                    <button class="filter-btn active" data-filter="all">Todos</button>
+                    <button class="filter-btn" data-filter="income">Ingresos</button>
+                    <button class="filter-btn" data-filter="expense">Pagos</button>
+                </div>
+                <button class="btn-primary" id="createMovementBtn">
+                    <i class="fas fa-plus"></i> Nuevo movimiento
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="transactions-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>ID</th>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Categorías</th>
+                </tr>
+            </thead>
+            <tbody id="transactions-body">
+                <tr class="loading-row">
+                    <td colspan="5" style="text-align: center; padding: 30px">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando transacciones...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Modal Nueva Tarjeta -->
@@ -91,11 +100,11 @@
         <form id="createCardForm" class="modal-body">
             <div class="form-group">
                 <label for="card-account-select">Cuenta Vinculada</label>
-                <div style="position: relative">
+                <div class="select-wrapper">
                     <select id="card-account-select" class="account-dropdown" style="padding: 8px 10px; font-size: 14px">
                         <option value="">Cargando cuentas...</option>
                     </select>
-                    <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 12px; color: #757575;"></i>
+                    <i class="fas fa-chevron-down select-icon-overlay"></i>
                 </div>
             </div>
 
@@ -124,12 +133,12 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 15px">
-                <div class="form-group" style="flex: 1">
+            <div class="form-row-flex">
+                <div class="form-group flex-1">
                     <label for="card-digits">Últimos 4 dígitos</label>
                     <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" />
                 </div>
-                <div class="form-group" style="flex: 1">
+                <div class="form-group flex-1">
                     <label for="card-exp">Caducidad</label>
                     <input type="month" id="card-exp" required />
                 </div>
@@ -158,21 +167,21 @@
                     <label class="type-option">
                         <input type="radio" name="movement_type" value="gasto" checked />
                         <div class="type-content">
-                            <i class="fas fa-arrow-up" style="color: #ef4444"></i>
+                            <i class="fas fa-arrow-up text-danger"></i>
                             <span>Gasto</span>
                         </div>
                     </label>
                     <label class="type-option">
                         <input type="radio" name="movement_type" value="ingreso" />
                         <div class="type-content">
-                            <i class="fas fa-arrow-down" style="color: #10b981"></i>
+                            <i class="fas fa-arrow-down text-success"></i>
                             <span>Ingreso</span>
                         </div>
                     </label>
                     <label class="type-option">
                         <input type="radio" name="movement_type" value="traspaso" />
                         <div class="type-content">
-                            <i class="fas fa-exchange-alt" style="color: #3b82f6"></i>
+                            <i class="fas fa-exchange-alt text-blue"></i>
                             <span>Traspaso</span>
                         </div>
                     </label>
@@ -214,14 +223,14 @@
                     <label class="type-option">
                         <input type="radio" name="destination_type" value="own_account" checked />
                         <div class="type-content">
-                            <i class="fas fa-university" style="color: #3b82f6"></i>
+                            <i class="fas fa-university text-blue"></i>
                             <span>Cuenta propia</span>
                         </div>
                     </label>
                     <label class="type-option">
                         <input type="radio" name="destination_type" value="external_iban" />
                         <div class="type-content">
-                            <i class="fas fa-external-link-alt" style="color: #f59e0b"></i>
+                            <i class="fas fa-external-link-alt text-amber"></i>
                             <span>IBAN externo</span>
                         </div>
                     </label>

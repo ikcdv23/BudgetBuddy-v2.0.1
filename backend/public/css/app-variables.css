@@ -1,0 +1,115 @@
+/* app-variables.css - Design tokens unificados de BudgetBuddy */
+
+:root {
+    /* Layout */
+    --sidebar-width: 70px;
+    --header-height: 70px;
+
+    /* Colores primarios */
+    --primary: #217A4A;
+    --primary-dark: #1a603a;
+    --primary-light: #34d399;
+
+    /* Colores semánticos */
+    --expense-red: #F4481B;
+    --income-green: #00B934;
+    --color-blue: #3b82f6;
+    --color-amber: #f59e0b;
+    --color-danger: #ef4444;
+    --color-success: #10b981;
+    --danger-red: #dc2626;
+
+    /* Escala de grises (Tailwind-compatible) */
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --gray-900: #111827;
+
+    /* Fondos y superficies */
+    --background: #FFFFFF;
+    --card-bg: #FFFFFF;
+    --gray-light: var(--gray-100);
+    --green-bg: #C7FAC3;
+    --hover-green: #C7FAC3;
+    --date-bg: var(--primary);
+
+    /* Superficies escalonadas */
+    --surface-0: #FFFFFF;
+    --surface-1: var(--gray-50);
+    --surface-2: var(--gray-100);
+    --surface-3: var(--gray-200);
+
+    /* Acentos suaves (fondos tintados) */
+    --primary-subtle: rgba(33, 122, 74, 0.08);
+    --danger-subtle: rgba(239, 68, 68, 0.08);
+    --blue-subtle: rgba(59, 130, 246, 0.08);
+    --amber-subtle: rgba(245, 158, 11, 0.08);
+
+    /* Texto */
+    --text-main: #111827;
+    --text-muted: #6b7280;
+
+    /* Bordes */
+    --border: #e5e7eb;
+    --border-icon: #d1d5db;
+
+    /* Sombras (6 niveles) */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+
+    /* Border radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+
+    /* Transiciones */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+
+    /* Spacing */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Estadísticas (mercado) */
+    --market-up: #10b981;
+    --market-down: #ef4444;
+    --market-neutral: var(--gray-500);
+    --chart-bg: #FFFFFF;
+    --card-shadow: var(--shadow-md);
+    --card-border: var(--border);
+}
+
+/* =========================================== */
+/* ACCESIBILIDAD: Reduced Motion               */
+/* =========================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

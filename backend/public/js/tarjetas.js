@@ -1,7 +1,7 @@
 // tarjetas.js
 
 (function () {
-    // getCookie, escapeHTML, formatDate, showNotification -> app-base.js
+    // getCookie, escapeHTML, formatDate, formatCurrency, showNotification, apiRequest -> core/utils.js + core/api-client.js
 
     // ==========================================
     // 1. API CONFIGURATION
@@ -43,6 +43,7 @@
     const dom = {
         cardAccountSelect: document.getElementById('cardAccountSelect'),
         cardsContainer: document.getElementById('cards-container'),
+        cardDetailPanel: document.getElementById('card-detail-panel'),
         transactionsBody: document.getElementById('transactions-body'),
         filterButtons: document.querySelectorAll('.filter-btn'),
         createMovementBtn: document.getElementById('createMovementBtn'),
@@ -72,15 +73,7 @@
     // ==========================================
     // 4. HELPER FUNCTIONS
     // ==========================================
-    function formatCurrency(amount) {
-        if (amount === undefined || amount === null || isNaN(amount)) amount = 0;
-        return new Intl.NumberFormat('es-ES', {
-            style: 'currency',
-            currency: 'EUR',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
-    }
+    // formatCurrency → window.formatCurrency (core/utils.js)
 
     function updateDate() {
         if (!dom.dateContainer) return;
@@ -92,63 +85,7 @@
         });
     }
 
-    async function apiRequest(url, method = 'GET', data = null) {
-        // Obtener CSRF cookie antes de peticiones mutantes
-        if (method !== 'GET') {
-            await fetch('/sanctum/csrf-cookie', { credentials: 'same-origin' });
-        }
-
-        const options = {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-XSRF-TOKEN': getCookie('XSRF-TOKEN') || '',
-            },
-            credentials: 'same-origin'
-        };
-
-        if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
-            options.body = JSON.stringify(data);
-        }
-
-        console.log(`API ${method} ${url}`, data);
-
-        try {
-            const response = await fetch(url, options);
-            console.log(`Response ${response.status} from ${url}`);
-
-            if (response.status === 401) {
-                showNotification('Sesión expirada. Redirigiendo al login...', 'error');
-                setTimeout(() => window.location.href = '/login', 2000);
-                return null;
-            }
-
-            if (response.status === 422) {
-                const errors = await response.json();
-                const errorMessages = errors.errors ?
-                    Object.values(errors.errors).flat().join(', ') :
-                    errors.message || 'Error de validación';
-                throw new Error(errorMessages);
-            }
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            if (response.status === 204 || method === 'DELETE') {
-                return { success: true };
-            }
-
-            return await response.json();
-
-        } catch (error) {
-            console.error('API Error:', error);
-            showNotification(`Error: ${error.message}`, 'error');
-            throw error;
-        }
-    }
+    // apiRequest → window.apiRequest (core/api-client.js)
 
     // ==========================================
     // 5. ЗАВАНТАЖЕННЯ ДАНИХ
@@ -381,7 +318,8 @@
             const cardEl = document.createElement('div');
             let visualType = card.type === "credit" ? "mastercard" : "visa";
 
-            cardEl.className = `mini-card ${visualType}`;
+            const isSelected = card.id === selectedCardId;
+            cardEl.className = `mini-card ${visualType}${isSelected ? ' selected' : ''}`;
             cardEl.setAttribute('draggable', 'true');
             cardEl.setAttribute('data-card-id', card.id.toString());
 
@@ -425,8 +363,11 @@
                 if (dom.cardAccountSelect) {
                     dom.cardAccountSelect.value = selectedCardId;
                 }
+                // Update highlight on all mini-cards
+                document.querySelectorAll('.mini-card').forEach(mc => mc.classList.remove('selected'));
+                cardEl.classList.add('selected');
                 showNotification(`Seleccionada: ${card.alias}`, 'info');
-                loadMovements();
+                loadMovements().then(() => renderCardDetail(card));
             });
 
             dom.cardsContainer.appendChild(cardEl);
@@ -487,6 +428,87 @@
             option.style.color = tag.color || '#000000';
             dom.movementCategorySelect.appendChild(option);
         });
+    }
+
+    function renderCardDetail(card) {
+        const panel = dom.cardDetailPanel;
+        if (!panel) return;
+
+        if (!card) {
+            panel.innerHTML = `<div class="card-detail-empty">
+                <i class="fas fa-credit-card"></i>
+                <p>Selecciona una tarjeta</p>
+            </div>`;
+            return;
+        }
+
+        const visualType = card.type === 'credit' ? 'mastercard' : 'visa';
+        const iconClass = card.type === 'credit' ? 'fab fa-cc-mastercard' : 'fab fa-cc-visa';
+        const typeName = card.type === 'credit' ? 'Crédito' : 'Débito';
+        const balance = card.account?.current_balance || card.account?.balance || 0;
+        const bankName = card.account?.bank_name || 'Cuenta vinculada';
+        const shortIban = card.account?.iban ? '****' + card.account.iban.slice(-4) : '';
+
+        let expFormatted = '--/--';
+        if (card.expiration_date) {
+            try {
+                const d = new Date(card.expiration_date);
+                expFormatted = `${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            } catch (e) { }
+        }
+
+        // Stats from currentMovements (already filtered by selected card)
+        const cardMovements = currentMovements;
+        const totalMov = cardMovements.length;
+        const totalGastos = cardMovements
+            .filter(m => parseFloat(m.amount) < 0)
+            .reduce((sum, m) => sum + Math.abs(parseFloat(m.amount)), 0);
+        const totalIngresos = cardMovements
+            .filter(m => parseFloat(m.amount) > 0)
+            .reduce((sum, m) => sum + parseFloat(m.amount), 0);
+
+        panel.innerHTML = `
+            <div class="card-detail-header">
+                <div class="card-detail-icon ${escapeHTML(visualType)}-bg">
+                    <i class="${escapeHTML(iconClass)}"></i>
+                </div>
+                <div class="card-detail-info">
+                    <h3>${escapeHTML(card.alias)}</h3>
+                    <p>${escapeHTML(typeName)} · ${escapeHTML(visualType.charAt(0).toUpperCase() + visualType.slice(1))}</p>
+                </div>
+            </div>
+            <div class="card-detail-number">
+                **** **** **** ${escapeHTML(card.last_4_digits || '0000')}
+            </div>
+            <div class="card-detail-meta">
+                <div class="card-detail-meta-row">
+                    <span class="card-detail-meta-label"><i class="fas fa-calendar"></i> Caducidad</span>
+                    <span class="card-detail-meta-value">${escapeHTML(expFormatted)}</span>
+                </div>
+                <div class="card-detail-meta-row">
+                    <span class="card-detail-meta-label"><i class="fas fa-university"></i> Cuenta</span>
+                    <span class="card-detail-meta-value">${escapeHTML(bankName)} ${escapeHTML(shortIban)}</span>
+                </div>
+            </div>
+            <div class="card-stats-grid">
+                <div class="card-stat-item">
+                    <div class="card-stat-label">Saldo</div>
+                    <div class="card-stat-value">${formatCurrency(balance)}</div>
+                </div>
+                <div class="card-stat-item">
+                    <div class="card-stat-label">Movimientos</div>
+                    <div class="card-stat-value">${totalMov}</div>
+                </div>
+                <div class="card-stat-item">
+                    <div class="card-stat-label">Gastos</div>
+                    <div class="card-stat-value amount-expense">-${formatCurrency(totalGastos)}</div>
+                </div>
+                <div class="card-stat-item">
+                    <div class="card-stat-label">Ingresos</div>
+                    <div class="card-stat-value amount-income">+${formatCurrency(totalIngresos)}</div>
+                </div>
+            </div>
+        `;
     }
 
     function renderMovements() {
@@ -584,78 +606,23 @@
     }
 
     // ==========================================
-    // 7. DRAG & DROP
+    // 7. DRAG & DROP (usa modules/drag-drop.js)
     // ==========================================
     function initializeDragAndDrop() {
-        const cardItems = document.querySelectorAll('.mini-card:not(.ghost-card)');
-        const deleteZone = document.getElementById('deleteCardZone');
-
-        if (!deleteZone) {
-            console.warn('Delete zone not found!');
-            return;
-        }
-
-        cardItems.forEach((card) => {
-            card.addEventListener('dragstart', handleDragStart);
-            card.addEventListener('dragend', handleDragEnd);
+        window.initDragAndDrop({
+            items: '.mini-card:not(.ghost-card)',
+            dropZone: '#deleteCardZone',
+            dataAttr: 'data-card-id',
+            onDrop: async function (id) {
+                draggedCardId = id;
+                const card = currentCards.find(c => c.id.toString() === id);
+                if (!card) return;
+                const success = await deleteCard(id);
+                if (success) {
+                    draggedCardId = null;
+                }
+            }
         });
-
-        deleteZone.addEventListener('dragover', handleDragOver);
-        deleteZone.addEventListener('dragleave', handleDragLeave);
-        deleteZone.addEventListener('drop', handleDrop);
-    }
-
-    function handleDragStart(e) {
-        draggedCardId = this.getAttribute('data-card-id');
-        e.dataTransfer.setData('text/plain', draggedCardId);
-        this.classList.add('dragging');
-
-        const deleteZone = document.getElementById('deleteCardZone');
-        if (deleteZone) {
-            deleteZone.classList.add('active');
-        }
-    }
-
-    function handleDragEnd() {
-        this.classList.remove('dragging');
-        const deleteZone = document.getElementById('deleteCardZone');
-        if (deleteZone) {
-            deleteZone.classList.remove('active', 'drag-over');
-        }
-    }
-
-    function handleDragOver(e) {
-        e.preventDefault();
-        const deleteZone = document.getElementById('deleteCardZone');
-        if (deleteZone) {
-            deleteZone.classList.add('drag-over');
-        }
-    }
-
-    function handleDragLeave() {
-        const deleteZone = document.getElementById('deleteCardZone');
-        if (deleteZone) {
-            deleteZone.classList.remove('drag-over');
-        }
-    }
-
-    async function handleDrop(e) {
-        e.preventDefault();
-
-        const deleteZone = document.getElementById('deleteCardZone');
-        if (deleteZone) {
-            deleteZone.classList.remove('drag-over');
-        }
-
-        if (!draggedCardId) return;
-
-        const card = currentCards.find(c => c.id.toString() === draggedCardId);
-        if (!card) return;
-
-        const success = await deleteCard(draggedCardId);
-        if (success) {
-            draggedCardId = null;
-        }
     }
 
     // ==========================================
@@ -749,8 +716,13 @@
     // ==========================================
     if (dom.cardAccountSelect) {
         dom.cardAccountSelect.addEventListener('change', function () {
-            selectedCardId = this.value;
-            loadMovements();
+            selectedCardId = this.value ? parseInt(this.value) : null;
+            // Update highlight on mini-cards
+            document.querySelectorAll('.mini-card').forEach(mc => mc.classList.remove('selected'));
+            const activeMiniCard = document.querySelector(`.mini-card[data-card-id="${selectedCardId}"]`);
+            if (activeMiniCard) activeMiniCard.classList.add('selected');
+            const card = currentCards.find(c => c.id === selectedCardId);
+            loadMovements().then(() => renderCardDetail(card || null));
         });
     }
 
@@ -1032,6 +1004,14 @@
             showNotification('Algunos datos no se pudieron cargar', 'error');
         } else {
             showNotification('Sistema cargado correctamente', 'success');
+        }
+
+        // Render detail panel for the first selected card
+        if (selectedCardId) {
+            const card = currentCards.find(c => c.id === selectedCardId);
+            renderCardDetail(card || null);
+        } else {
+            renderCardDetail(null);
         }
 
         setInterval(updateDate, 60000);

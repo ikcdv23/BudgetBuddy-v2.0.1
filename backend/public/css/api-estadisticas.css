@@ -1,70 +1,7 @@
-/* api-estadisticas.css - Estilos específicos para estadísticas */
+/* api-estadisticas.css - Estilos específicos para la página de estadísticas */
+/* Shared styles (variables, header, layout) are in app-variables.css and app-layout.css */
 
-/* ============ ЗМІННІ З DESKTOP.CSS ============ */
-:root {
-    --sidebar-width: 70px;
-    --header-height: 70px;
-    --primary: #217A4A;
-    --primary-dark: #1a603a;
-    --expense-red: #F4481B;
-    --income-green: #00B934;
-    --background: #FFFFFF;
-    --card-bg: #FFFFFF;
-    --text-main: #000000;
-    --text-muted: #757575;
-    --border: #757575;
-    /* ОСЬ ЦЕ ТЕПЕР ТУТ! */
-    --gray-light: #F5F5F5;
-    --hover-green: #C7FAC3;
-    --border-icon: #757575;
-    --date-bg: #525050;
-    --green-bg: #C7FAC3;
-
-    /* Додаткові для статистик */
-    --market-up: #10b981;
-    --market-down: #ef4444;
-    --market-neutral: #6b7280;
-    --chart-bg: #FFFFFF;
-    --card-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    --card-border: #757575;
-}
-
-/* ============ ДОДАТКОВІ СТИЛІ ДЛЯ HEADER ============ */
-.desktop-header {
-    position: fixed;
-    top: 20px;
-    left: 30px;
-    right: 20px;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(40px) saturate(200%) contrast(120%);
-    -webkit-backdrop-filter: blur(40px) saturate(200%) contrast(120%);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 30px;
-    z-index: 1000;
-    border-radius: 50px;
-    border: 1px solid var(--border);
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.08),
-        0 1px 0 rgba(255, 255, 255, 0.5) inset,
-        0 -1px 0 rgba(0, 0, 0, 0.05) inset;
-    transition: all 0.5s ease;
-    overflow: hidden;
-}
-
-.desktop-header.scrolled {
-    background: rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(50px) saturate(250%) contrast(130%);
-    -webkit-backdrop-filter: blur(50px) saturate(250%) contrast(130%);
-    border-color: var(--border);
-    box-shadow:
-        0 12px 48px rgba(0, 0, 0, 0.12),
-        0 2px 0 rgba(255, 255, 255, 0.6) inset,
-        0 -2px 0 rgba(0, 0, 0, 0.1) inset;
-}
-
+/* ============ SCROLLED-ACTIVE (unique to estadisticas) ============ */
 .desktop-header.scrolled-active {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(60px) saturate(200%);
@@ -72,102 +9,7 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
 }
 
-.desktop-header::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg,
-            rgba(255, 255, 255, 0.4) 0%,
-            rgba(255, 255, 255, 0.2) 50%,
-            rgba(255, 255, 255, 0.1) 100%);
-    border-radius: 50px;
-    z-index: -1;
-    pointer-events: none;
-}
-
-.desktop-brand img {
-    height: 45px;
-    width: auto;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-}
-
-.desktop-brand img:hover {
-    transform: scale(1.05);
-}
-
-.desktop-header-right {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-}
-
-.top-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--gray-light);
-    color: var(--text-main);
-    cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid var(--border-icon);
-    position: relative;
-}
-
-.top-icon:hover {
-    background-color: var(--hover-green);
-    border-color: var(--primary);
-}
-
-.notification-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: var(--expense-red);
-    color: white;
-    font-size: 0.7rem;
-    font-weight: bold;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.user-profile-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.user-avatar-top {
-    width: 45px;
-    height: 45px;
-    background-color: var(--primary);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: 600;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.user-avatar-top:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* ============ РЕШТА ТВОЄГО CSS (без змін) ============ */
+/* ============ MARKET SUMMARY ============ */
 .market-summary {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -230,7 +72,7 @@
     color: var(--market-down);
 }
 
-/* Timeframe Selector */
+/* ============ TIMEFRAME SELECTOR ============ */
 .timeframe-selector {
     display: flex;
     gap: 10px;
@@ -264,7 +106,7 @@
     border-color: var(--primary);
 }
 
-/* Charts Container */
+/* ============ CHARTS CONTAINER ============ */
 .charts-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -281,7 +123,6 @@
     display: flex;
     flex-direction: column;
     height: 500px;
-    /* Фіксована висота для всіх карток */
     overflow: hidden;
 }
 
@@ -293,7 +134,6 @@
     flex-wrap: wrap;
     gap: 10px;
     flex-shrink: 0;
-    /* Не стискається */
 }
 
 .chart-header h3 {
@@ -342,7 +182,6 @@
 
 .chart-wrapper {
     flex: 1;
-    /* Займає всю доступну висоту */
     position: relative;
     width: 100%;
     margin-bottom: 15px;
@@ -358,9 +197,8 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     padding-top: 15px;
-    border-top: 1px solid rgba(117, 117, 117, 0.2);
+    border-top: 1px solid var(--gray-200);
     flex-shrink: 0;
-    /* Не стискається */
 }
 
 .stat {
@@ -383,7 +221,7 @@
     font-weight: 600;
 }
 
-/* ETF Comparison */
+/* ============ ETF COMPARISON ============ */
 .etf-comparison {
     margin-bottom: 40px;
 }
@@ -484,7 +322,7 @@
     font-size: 20px;
 }
 
-/* Educational Content */
+/* ============ EDUCATIONAL CONTENT ============ */
 .educational-content {
     margin-bottom: 40px;
 }
@@ -534,6 +372,7 @@
     opacity: 0.9;
 }
 
+/* ============ DISCLAIMER ============ */
 .disclaimer {
     background: #fef3c7;
     border: 1px solid #fbbf24;
@@ -559,30 +398,7 @@
     font-size: 14px;
 }
 
-/* Resetear estilos de botones en la cabecera */
-.top-icon-btn,
-.user-avatar-btn {
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-    /* Hereda el color del icono original */
-}
-
-/* Mantener el estilo de top-icon original dentro del botón */
-.top-icon-btn .fas {
-    /* Aquí irían los estilos que tenías antes en .top-icon */
-    font-size: 1.2rem;
-    color: #555;
-    /* etc... */
-}
-
-/* Responsive Design */
+/* ============ RESPONSIVE DESIGN ============ */
 @media (max-width: 1200px) {
     .educational-grid {
         grid-template-columns: repeat(2, 1fr);
@@ -665,20 +481,5 @@
 
     .summary-card {
         padding: 15px;
-    }
-
-    .desktop-brand {
-        margin-left: -3%;
-    }
-
-    .desktop-header-right {
-        margin-right: -4%;
-        gap: 10px;
-    }
-
-    .desktop-header {
-        width: 78%;
-        margin-left: -5%;
-        margin-top: -3%;
     }
 }

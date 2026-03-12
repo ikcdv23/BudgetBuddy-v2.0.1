@@ -2,7 +2,7 @@
 (function() {
 'use strict';
 
-// escapeHTML, getCookie, formatDate -> app-base.js
+// escapeHTML, getCookie, formatDate, formatCurrency, apiRequest -> core/utils.js + core/api-client.js
 
 function hexToRgb(hex) {
 	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -41,33 +41,15 @@ async function loadGoalsFromServer() {
         </div>`;
 
 	try {
-		const response = await fetch("/api/envelopes", {
-			headers: {
-				Accept: "application/json",
-				"Content-Type": "application/json",
-			},
-			credentials: "same-origin",
-		});
-
-		// A. EL SERVIDOR RESPONDIÓ BIEN (Status 200-299)
-		if (response.ok) {
-			const goals = await response.json();
-
-			// LÓGICA CLAVE: ¿Array vacío o lleno?
-			if (goals.length === 0) {
-				renderEmptyState(); // <--- CASO: NO EXISTEN (200 OK pero vacío)
-			} else {
-				renderGoals(goals); // <--- CASO: EXISTEN Y HAY DATOS
-			}
+		const goals = await apiRequest("/api/envelopes");
+		if (!goals || goals.length === 0) {
+			renderEmptyState();
 		} else {
-			// B. EL SERVIDOR RESPONDIÓ CON ERROR (Status 400, 500, 401...)
-			console.error("Error del servidor:", response.status);
-			renderErrorState(); // <--- CASO: ERROR DE SERVIDOR
+			renderGoals(goals);
 		}
 	} catch (error) {
-		// C. ERROR DE RED (Internet caído, servidor apagado)
-		console.error("Error de red:", error);
-		renderErrorState(); // <--- CASO: ERROR DE RED
+		console.error("Error cargando metas:", error);
+		renderErrorState();
 	}
 }
 
@@ -194,53 +176,36 @@ async function loadAccountsFromServer() {
 	if (accountCard) accountCard.classList.add("is-loading");
 
 	try {
-		// Simulamos un pequeño retardo artificial para que se aprecie la animación
-		// (puedes quitar el setTimeout en producción, pero ayuda a ver el efecto)
 		await new Promise((r) => setTimeout(r, 800));
 
-		const response = await fetch("/api/accounts", {
-			headers: { Accept: "application/json" },
-			credentials: "same-origin",
+		const accounts = await apiRequest("/api/accounts");
+		if (!accounts) return;
+
+		// Mapeo de datos
+		accountsData = {};
+		accounts.forEach((acc) => {
+			accountsData[acc.id] = {
+				bankName: acc.bank_name,
+				accountType: "Cuenta Corriente",
+				iban: acc.iban,
+				balance: formatCurrency(acc.current_balance),
+				rawBalance: acc.current_balance,
+				spendable_balance: acc.spendable_balance,
+				logoIcon: getBankIcon(acc.bank_name),
+			};
 		});
 
-		if (response.ok) {
-			const accounts = await response.json();
+		renderAccountDropdown(accounts);
 
-			// Mapeo de datos (Asegúrate de usar los nombres de TU base de datos)
-			accountsData = {};
-			accounts.forEach((acc) => {
-				accountsData[acc.id] = {
-					bankName: acc.bank_name,
-					accountType: "Cuenta Corriente", // Valor fijo si no viene de BD
-					iban: acc.iban,
-					balance: new Intl.NumberFormat("es-ES", {
-						style: "currency",
-						currency: "EUR",
-					}).format(acc.current_balance),
-					// Guardamos el número crudo total
-					rawBalance: acc.current_balance,
-					spendable_balance: acc.spendable_balance,
-					logoIcon: getBankIcon(acc.bank_name),
-				};
-			});
-
-			renderAccountDropdown(accounts);
-
-			if (accounts.length > 0) {
-				updateAccountInfo(accounts[0].id.toString());
-			} else {
-				// Manejar caso de 0 cuentas (opcional)
-				bankNameElement.textContent = "Sin cuentas";
-			}
-
-			// 2. DESACTIVAR MODO CARGA (Datos listos)
-			if (accountCard) accountCard.classList.remove("is-loading");
+		if (accounts.length > 0) {
+			updateAccountInfo(accounts[0].id.toString());
 		} else {
-			showNotification("Error al cargar cuentas", "error");
-			if (accountCard) accountCard.classList.remove("is-loading");
+			bankNameElement.textContent = "Sin cuentas";
 		}
 	} catch (error) {
-		console.error("Error:", error);
+		console.error("Error cargando cuentas:", error);
+		showNotification("Error al cargar cuentas", "error");
+	} finally {
 		if (accountCard) accountCard.classList.remove("is-loading");
 	}
 }
@@ -282,10 +247,7 @@ function updateAccountInfo(accountId) {
 			? account.spendable_balance
 			: account.rawBalance;
 
-	const formattedAvailable = new Intl.NumberFormat("es-ES", {
-		style: "currency",
-		currency: "EUR",
-	}).format(rawBalance);
+	const formattedAvailable = formatCurrency(rawBalance);
 
 	// Pintamos el Saldo Disponible (El real menos las metas)
 	balanceElement.innerHTML = `
@@ -360,29 +322,14 @@ async function loadCardsForAccount(accountId) {
         </div>`;
 
 	try {
-		console.log(`Solicitando tarjetas REALES para la cuenta ${accountId}...`);
-
-		// Petición al Backend
-		const response = await fetch(`/api/accounts/${accountId}/cards`, {
-			headers: {
-				Accept: "application/json",
-				"Content-Type": "application/json",
-			},
-			credentials: "same-origin",
-		});
-
-		if (response.ok) {
-			const cards = await response.json();
-			renderCards(container, cards); // <--- Función nueva
-		} else {
-			console.error("Error servidor:", response.status);
-			container.innerHTML =
-				'<div style="padding:20px; color: #ef4444">Error al cargar tarjetas</div>';
+		const cards = await apiRequest(`/api/accounts/${accountId}/cards`);
+		if (cards) {
+			renderCards(container, cards);
 		}
 	} catch (e) {
-		console.error(e);
+		console.error("Error cargando tarjetas:", e);
 		container.innerHTML =
-			'<div style="padding:20px; color: #ef4444">Error de conexión</div>';
+			'<div style="padding:20px; color: #ef4444">Error al cargar tarjetas</div>';
 	}
 }
 
@@ -417,10 +364,7 @@ function renderCards(container, cards) {
 
 		cardEl.className = `mini-card ${visualType}`;
 
-		const balanceFormatted = new Intl.NumberFormat("es-ES", {
-			style: "decimal",
-			minimumFractionDigits: 2,
-		}).format(card.balance || 0);
+		const balanceFormatted = formatCurrency(card.balance || 0);
 
 		let expDateFormatted = "??/??";
 		if (card.expiration_date) {
@@ -621,43 +565,26 @@ if (saveCardBtn) {
 			'<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
 		try {
-			await fetch("/sanctum/csrf-cookie");
-
-			const response = await fetch("/api/cards", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Accept: "application/json",
-					"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-				},
-				credentials: "same-origin",
-				body: JSON.stringify({
-					account_id: accountId,
-					alias: alias,
-					type: typeRadio.value, // 'debit' o 'credit'
-					last_4_digits: digits,
-					expiration_date: expDate,
-					balance: 0, // Balance inicial 0 o lo que quieras
-				}),
+			await apiRequest("/api/cards", "POST", {
+				account_id: accountId,
+				alias: alias,
+				type: typeRadio.value,
+				last_4_digits: digits,
+				expiration_date: expDate,
+				balance: 0,
 			});
 
-			if (response.ok) {
-				showNotification("Tarjeta añadida correctamente", "success");
-				cardModal.close();
+			showNotification("Tarjeta añadida correctamente", "success");
+			cardModal.close();
 
-				// Recargar las tarjetas del dashboard si estamos viendo esa cuenta
-				const currentDashboardAccount =
-					document.getElementById("bankAccountSelect").value;
-				if (currentDashboardAccount === accountId) {
-					loadCardsForAccount(accountId);
-				}
-			} else {
-				const data = await response.json();
-				showNotification(data.message || "Error al crear tarjeta", "error");
+			const currentDashboardAccount =
+				document.getElementById("bankAccountSelect").value;
+			if (currentDashboardAccount === accountId) {
+				loadCardsForAccount(accountId);
 			}
 		} catch (error) {
 			console.error(error);
-			showNotification("Error de conexión", "error");
+			showNotification("Error al crear tarjeta", "error");
 		} finally {
 			saveCardBtn.disabled = false;
 			saveCardBtn.innerHTML = originalText;
@@ -670,25 +597,13 @@ if (saveCardBtn) {
 async function loadTagsFromServer() {
 	console.log("Cargando etiquetas...");
 	try {
-		const response = await fetch("/api/tags", {
-			headers: {
-				Accept: "application/json",
-				"Content-Type": "application/json",
-			},
-			credentials: "same-origin",
-		});
-
-		if (response.ok) {
-			const tags = await response.json();
-			if (typeof renderTags === "function") {
-				renderTags(tags);
-			}
-			return tags;
-		} else {
-			console.warn("No se pudieron cargar etiquetas");
+		const tags = await apiRequest("/api/tags");
+		if (tags && typeof renderTags === "function") {
+			renderTags(tags);
 		}
+		return tags;
 	} catch (error) {
-		console.error("Error de red tags:", error);
+		console.error("Error cargando etiquetas:", error);
 	}
 }
 
@@ -736,113 +651,33 @@ function renderTags(tags) {
 	initializeDragAndDrop();
 }
 
-// ========== SISTEMA DRAG & DROP ETIQUETAS ==========
-
-let deleteTagArea = null;
-let deleteIndicator = null;
+// ========== SISTEMA DRAG & DROP ETIQUETAS (usa modules/drag-drop.js) ==========
 
 function initializeDragAndDrop() {
-	if (!deleteTagArea)
-		deleteTagArea = document.getElementById("delete-tag-area");
-	if (!deleteIndicator)
-		deleteIndicator = document.getElementById("delete-indicator");
+	window.initDragAndDrop({
+		items: ".tag-item:not(.delete-tag-item)",
+		dropZone: "#delete-tag-area",
+		indicator: "#delete-indicator",
+		dataAttr: "data-id",
+		onDrop: async function (tagId, tagEl) {
+			if (!tagEl) return;
 
-	const tagItems = document.querySelectorAll(".tag-item:not(.delete-tag-item)");
+			if (!confirm("¿Estás seguro de eliminar esta etiqueta?")) return;
 
-	tagItems.forEach((tag) => {
-		tag.removeEventListener("dragstart", handleDragStart);
-		tag.removeEventListener("dragend", handleDragEnd);
-		tag.addEventListener("dragstart", handleDragStart);
-		tag.addEventListener("dragend", handleDragEnd);
-		tag.setAttribute("draggable", "true");
+			tagEl.style.opacity = "0.5";
+
+			try {
+				await apiRequest(`/api/tags/${tagId}`, "DELETE");
+				tagEl.remove();
+				showNotification("Etiqueta eliminada", "success");
+				loadTagsFromServer();
+			} catch (error) {
+				console.error(error);
+				showNotification("No se pudo eliminar (¿Está en uso?)", "error");
+				tagEl.style.opacity = "1";
+			}
+		},
 	});
-
-	if (deleteTagArea) {
-		deleteTagArea.removeEventListener("dragover", handleDragOver);
-		deleteTagArea.removeEventListener("dragleave", handleDragLeave);
-		deleteTagArea.removeEventListener("drop", handleDrop);
-
-		deleteTagArea.addEventListener("dragover", handleDragOver);
-		deleteTagArea.addEventListener("dragleave", handleDragLeave);
-		deleteTagArea.addEventListener("drop", handleDrop);
-	}
-}
-
-function handleDragStart(e) {
-	e.dataTransfer.setData("text/plain", this.getAttribute("data-id"));
-	this.classList.add("dragging");
-	if (deleteIndicator) {
-		deleteIndicator.textContent = "Arrastra a la zona roja para eliminar";
-		deleteIndicator.classList.add("active");
-	}
-}
-
-function handleDragEnd() {
-	this.classList.remove("dragging");
-	if (deleteIndicator) deleteIndicator.classList.remove("active");
-	if (deleteTagArea) {
-		deleteTagArea.classList.remove("drag-over");
-		deleteTagArea.style.transform = "scale(1)";
-	}
-}
-
-function handleDragOver(e) {
-	e.preventDefault();
-	if (deleteTagArea) {
-		deleteTagArea.classList.add("drag-over");
-		deleteTagArea.style.transform = "scale(1.02)";
-	}
-}
-
-function handleDragLeave() {
-	if (deleteTagArea) {
-		deleteTagArea.classList.remove("drag-over");
-		deleteTagArea.style.transform = "scale(1)";
-	}
-}
-
-async function handleDrop(e) {
-	e.preventDefault();
-	const tagId = e.dataTransfer.getData("text/plain");
-	const tagToDelete = document.querySelector(
-		`.tag-item[data-id="${tagId}"]:not(.delete-tag-item)`,
-	);
-
-	if (!tagToDelete) return;
-
-	if (!confirm("¿Estás seguro de eliminar esta etiqueta?")) {
-		if (deleteTagArea) deleteTagArea.classList.remove("drag-over");
-		return;
-	}
-
-	tagToDelete.style.opacity = "0.5";
-
-	try {
-		await fetch("/sanctum/csrf-cookie"); // Refresh CSRF
-		const response = await fetch(`/api/tags/${tagId}`, {
-			method: "DELETE",
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-				"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-			},
-			credentials: "same-origin",
-		});
-
-		if (response.ok) {
-			tagToDelete.remove();
-			showNotification("Etiqueta eliminada", "success");
-			loadTagsFromServer(); // Recargar lista
-		} else {
-			showNotification("No se pudo eliminar (¿Está en uso?)", "error");
-			tagToDelete.style.opacity = "1";
-		}
-	} catch (error) {
-		console.error(error);
-		tagToDelete.style.opacity = "1";
-	}
-
-	if (deleteTagArea) deleteTagArea.classList.remove("drag-over");
 }
 
 // ==========================================
@@ -961,47 +796,30 @@ if (saveGoalBtn) {
 		saveGoalBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
 
 		try {
-			await fetch("/sanctum/csrf-cookie");
-
 			let url = "/api/envelopes";
 			let method = "POST";
 
 			if (id) {
-				// Es Editar
 				url += `/${id}`;
 				method = "PUT";
 			}
 
-			const response = await fetch(url, {
-				method: method,
-				headers: {
-					"Content-Type": "application/json",
-					Accept: "application/json",
-					"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-				},
-				credentials: "same-origin",
-				body: JSON.stringify({
-					account_id: accountId,
-					name: name,
-					target_amount: target,
-					allocated_amount: current,
-					icon: fullIconClass,
-				}),
+			await apiRequest(url, method, {
+				account_id: accountId,
+				name: name,
+				target_amount: target,
+				allocated_amount: current,
+				icon: fullIconClass,
 			});
 
-			if (response.ok) {
-				goalModal.close();
-				showNotification(id ? "Meta actualizada" : "Meta creada", "success");
-				loadGoalsFromServer(); // Recargar lista visual
-				loadAccountsFromServer(); // Actualizar saldo disponible
-			} else {
-				goalModal.close();
-				showNotification("Error al guardar", "error");
-			}
+			goalModal.close();
+			showNotification(id ? "Meta actualizada" : "Meta creada", "success");
+			loadGoalsFromServer();
+			loadAccountsFromServer();
 		} catch (error) {
 			goalModal.close();
 			console.error(error);
-			showNotification("Error de conexión", "error");
+			showNotification("Error al guardar meta", "error");
 		} finally {
 			saveGoalBtn.disabled = false;
 			saveGoalBtn.innerHTML = originalText;
@@ -1020,28 +838,15 @@ if (deleteGoalBtn) {
 		if (!confirm("¿Seguro que quieres eliminar esta meta?")) return;
 
 		try {
-			await fetch("/sanctum/csrf-cookie");
-			const response = await fetch(`/api/envelopes/${id}`, {
-				method: "DELETE",
-				headers: {
-					Accept: "application/json",
-					"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-				},
-				credentials: "same-origin",
-			});
-
-			if (response.ok) {
-				goalModal.close();
-				showNotification("Meta eliminada", "success");
-				loadGoalsFromServer();
-				loadAccountsFromServer(); // Actualizar saldo disponible
-			} else {
-				goalModal.close();
-				console.error("Error al eliminar meta:", response.status);
-				showNotification("No se pudo eliminar", "error");
-			}
+			await apiRequest(`/api/envelopes/${id}`, "DELETE");
+			goalModal.close();
+			showNotification("Meta eliminada", "success");
+			loadGoalsFromServer();
+			loadAccountsFromServer();
 		} catch (e) {
+			goalModal.close();
 			console.error(e);
+			showNotification("No se pudo eliminar", "error");
 		}
 	});
 }
@@ -1096,30 +901,17 @@ if (saveTag) {
 
 		saveTag.disabled = true;
 		try {
-			const response = await fetch("/api/tags", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Accept: "application/json",
-					"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-				},
-				credentials: "same-origin",
-				body: JSON.stringify({
-					name,
-					color: selectedColor,
-					icon: selectedIcon,
-				}),
+			await apiRequest("/api/tags", "POST", {
+				name,
+				color: selectedColor,
+				icon: selectedIcon,
 			});
-
-			if (response.ok) {
-				tagModal.close();
-				showNotification("Creada correctamente", "success");
-				loadTagsFromServer();
-			} else {
-				showNotification("Error al crear", "error");
-			}
+			tagModal.close();
+			showNotification("Creada correctamente", "success");
+			loadTagsFromServer();
 		} catch (e) {
 			console.error(e);
+			showNotification("Error al crear", "error");
 		} finally {
 			saveTag.disabled = false;
 		}
@@ -1234,35 +1026,13 @@ async function saveNewAccount(e) {
 	};
 
 	try {
-		// 1. Cookie CSRF (La clave de seguridad de Laravel)
-		await fetch("/sanctum/csrf-cookie");
-
-		// 2. Petición POST
-		const response = await fetch("/api/accounts", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-				"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-			},
-			body: JSON.stringify(newAccountData),
-		});
-
-		if (response.ok) {
-			showNotification("Cuenta creada correctamente", "success");
-			accountModal.close();
-			// Recargar la lista de cuentas para que aparezca la nueva
-			await loadAccountsFromServer();
-		} else {
-			const errorData = await response.json();
-			showNotification(
-				errorData.message || "Error al crear la cuenta",
-				"error",
-			);
-		}
+		await apiRequest("/api/accounts", "POST", newAccountData);
+		showNotification("Cuenta creada correctamente", "success");
+		accountModal.close();
+		await loadAccountsFromServer();
 	} catch (error) {
 		console.error(error);
-		showNotification("Error de conexión", "error");
+		showNotification("Error al crear la cuenta", "error");
 	} finally {
 		saveAccountBtn.disabled = false;
 		saveAccountBtn.innerHTML = originalText;
@@ -1411,32 +1181,13 @@ if (saveTransferBtn) {
 		saveTransferBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
 
 		try {
-			await fetch("/sanctum/csrf-cookie");
-			const response = await fetch("/api/movements", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Accept: "application/json",
-					"X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-				},
-				credentials: "same-origin",
-				body: JSON.stringify(payload),
-			});
-
-			if (response.ok) {
-				transferModal.close();
-				showNotification("Traspaso realizado correctamente", "success");
-				loadAccountsFromServer();
-			} else {
-				const data = await response.json();
-				const errorMsg = data.errors
-					? Object.values(data.errors).flat().join(", ")
-					: data.message || "Error al realizar el traspaso";
-				showNotification(errorMsg, "error");
-			}
+			await apiRequest("/api/movements", "POST", payload);
+			transferModal.close();
+			showNotification("Traspaso realizado correctamente", "success");
+			loadAccountsFromServer();
 		} catch (error) {
 			console.error("Transfer error:", error);
-			showNotification("Error de conexión", "error");
+			showNotification("Error al realizar el traspaso", "error");
 		} finally {
 			saveTransferBtn.disabled = false;
 			saveTransferBtn.innerHTML = originalText;

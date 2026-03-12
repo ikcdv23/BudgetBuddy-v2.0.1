@@ -60,11 +60,11 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; align-items: center; margin-top: 20px;">
+            <div class="d-flex gap-10" style="align-items: center; margin-top: 20px;">
                 <button id="open-account-modal-btn" class="btn-primary" title="Añadir nueva cuenta" aria-label="Añadir nueva cuenta">
                     <i class="fas fa-plus"></i>
                 </button>
-                <button id="open-transfer-modal-btn" class="btn-primary" title="Nuevo traspaso" aria-label="Nuevo traspaso" style="background: #3b82f6">
+                <button id="open-transfer-modal-btn" class="btn-primary btn-transfer-blue" title="Nuevo traspaso" aria-label="Nuevo traspaso">
                     <i class="fas fa-exchange-alt"></i> Traspaso
                 </button>
             </div>
@@ -90,17 +90,17 @@
 
                             <div class="form-group">
                                 <label for="acc-iban">IBAN</label>
-                                <div style="display: flex; align-items: stretch; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden;">
-                                    <select id="acc-iban-country" name="iban_country" aria-label="País del IBAN" style="border: none; background: #f9fafb; padding: 8px 5px; font-weight: 600; color: #374151; cursor: pointer; width: 60px; text-align: center; border-right: 1px solid #e5e7eb;">
+                                <div class="iban-input-wrapper">
+                                    <select id="acc-iban-country" name="iban_country" aria-label="País del IBAN" class="iban-country-select">
                                         <option value="ES" selected>ES</option>
                                         <option value="FR">FR</option>
                                         <option value="DE">DE</option>
                                         <option value="IT">IT</option>
                                         <option value="PT">PT</option>
                                     </select>
-                                    <input type="text" id="acc-iban" name="iban_number" placeholder="0000 0000 00..." required aria-required="true" data-format="iban" maxlength="27" inputmode="numeric" style="border: none; flex: 1; padding-left: 10px; border-radius: 0;" />
+                                    <input type="text" id="acc-iban" name="iban_number" placeholder="0000 0000 00..." required aria-required="true" data-format="iban" maxlength="27" inputmode="numeric" class="iban-number-input" />
                                 </div>
-                                <p id="iban-help" style="font-size: 0.75rem; color: #1f2937; margin-top: 4px;">
+                                <p id="iban-help" class="form-hint-text">
                                     Solo los 22 dígitos restantes.
                                 </p>
                             </div>
@@ -145,14 +145,14 @@
                                 <label class="type-option">
                                     <input type="radio" name="transfer_dest_type" value="own_account" checked />
                                     <div class="type-content">
-                                        <i class="fas fa-university" style="color: #3b82f6"></i>
+                                        <i class="fas fa-university text-blue"></i>
                                         <span>Cuenta propia</span>
                                     </div>
                                 </label>
                                 <label class="type-option">
                                     <input type="radio" name="transfer_dest_type" value="external_iban" />
                                     <div class="type-content">
-                                        <i class="fas fa-external-link-alt" style="color: #f59e0b"></i>
+                                        <i class="fas fa-external-link-alt text-amber"></i>
                                         <span>IBAN externo</span>
                                     </div>
                                 </label>
@@ -217,9 +217,9 @@
             <form id="create-card-form" class="modal-body">
                 <div class="form-group">
                     <label for="card-account-select">Cuenta Vinculada</label>
-                    <div style="position: relative">
+                    <div class="select-wrapper">
                         <select id="card-account-select" class="account-dropdown" style="padding: 8px 10px; font-size: 14px"></select>
-                        <i class="fas fa-chevron-down" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 12px; color: #757575;"></i>
+                        <i class="fas fa-chevron-down select-icon-overlay"></i>
                     </div>
                 </div>
 
@@ -229,7 +229,7 @@
                 </div>
 
                 <div class="form-group">
-                    <span id="card-type-label" style="display: block; margin-bottom: 5px; font-weight: bold;">Tipo de Tarjeta</span>
+                    <span id="card-type-label" class="form-label-bold">Tipo de Tarjeta</span>
                     <div class="card-type-selector" role="radiogroup" aria-labelledby="card-type-label">
                         <label class="type-option">
                             <input type="radio" name="card_type" value="debit" checked aria-label="Visa Débito" />
@@ -248,15 +248,15 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 15px">
-                    <div class="form-group" style="flex: 1">
+                <div class="form-row-flex">
+                    <div class="form-group flex-1">
                         <label for="card-digits">Últimos 4 dígitos</label>
                         <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" />
                     </div>
-                    <div class="form-group" style="flex: 1">
+                    <div class="form-group flex-1">
                         <label for="card-exp">Caducidad</label>
                         <input type="month" id="card-exp" required />
-                        <span style="font-size: 0.7rem; color: #6b7280; margin-top: 4px; display: block;">
+                        <span class="form-hint-text">
                             Ej: 12/2028 o usa el calendario
                         </span>
                     </div>
@@ -300,7 +300,7 @@
         <div class="card" style="min-height: 360px">
             <div class="card-header-compact">
                 <h2 class="card-title">Metas Financieras</h2>
-                <button onclick="openGoalModal()" style="border: none; background: #e5e7eb; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--primary);" aria-label="Añadir nueva meta financiera">
+                <button onclick="openGoalModal()" class="btn-add-circle" aria-label="Añadir nueva meta financiera">
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
@@ -329,7 +329,7 @@
                 <input type="text" id="tagName" placeholder="Ej: Gimnasio, Netflix, Gasolina..." aria-required="true" />
             </div>
             <div class="form-group">
-                <span id="color-label" style="display: block; margin-bottom: 5px; font-weight: bold">Color de la etiqueta</span>
+                <span id="color-label" class="form-label-bold">Color de la etiqueta</span>
                 <div class="color-picker" role="radiogroup" aria-labelledby="color-label">
                     <div class="color-option" style="background-color: #34d399" data-color="#34d399"></div>
                     <div class="color-option" style="background-color: #60a5fa" data-color="#60a5fa"></div>
@@ -378,12 +378,12 @@
                 <input type="text" id="goal-name" name="goal_name" placeholder="Ej: Viaje a Japón" required maxlength="30" />
             </div>
 
-            <div style="display: flex; gap: 15px">
-                <div class="form-group" style="flex: 1">
+            <div class="form-row-flex">
+                <div class="form-group flex-1">
                     <label for="goal-target">Meta (&euro;)</label>
                     <input type="number" id="goal-target" name="goal_target" placeholder="2000" required step="10" />
                 </div>
-                <div class="form-group" style="flex: 1">
+                <div class="form-group flex-1">
                     <label for="goal-current">Ahorrado (&euro;)</label>
                     <input type="number" id="goal-current" name="goal_current" placeholder="0" required step="10" />
                 </div>
@@ -421,10 +421,10 @@
         </form>
 
         <div class="modal-footer" style="justify-content: space-between">
-            <button class="btn-secondary" id="delete-goal-btn" style="color: #ef4444; border-color: #ef4444; display: none" aria-label="Eliminar meta actual">
+            <button class="btn-secondary btn-danger-outline" id="delete-goal-btn" style="display: none" aria-label="Eliminar meta actual">
                 <i class="fas fa-trash" aria-hidden="true"></i>
             </button>
-            <div style="display: flex; gap: 10px">
+            <div class="d-flex gap-10">
                 <button class="btn-secondary" id="cancel-goal-btn">Cancelar</button>
                 <button class="btn-primary" id="save-goal-btn">Guardar Meta</button>
             </div>

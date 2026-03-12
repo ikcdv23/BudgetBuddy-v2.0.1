@@ -1,12 +1,7 @@
 /**
- * setup.js - VERSIÓN ADAPTADA A TUS ERRORES DE LOG
+ * setup.js - Wizard de configuración inicial
+ * Depende de: core/utils.js (getCookie, showNotification), core/api-client.js (apiRequest)
  */
-
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return decodeURIComponent(parts.pop().split(";").shift());
-}
 
 document.addEventListener("DOMContentLoaded", async function () {
     let currentStep = 1;
@@ -104,43 +99,17 @@ document.addEventListener("DOMContentLoaded", async function () {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
         try {
-            await fetch("/sanctum/csrf-cookie");
-
-            const response = await fetch("/ajustes", {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-XSRF-TOKEN": getCookie("XSRF-TOKEN"),
-                },
-                body: JSON.stringify({
-                    first_name: firstName,
-                    last_name: lastName,
-                    phone_country_code: phoneCountryCode,
-                    phone: phone,
-                    email: currentUserEmail
-                }),
+            await apiRequest("/ajustes", "PUT", {
+                first_name: firstName,
+                last_name: lastName,
+                phone_country_code: phoneCountryCode,
+                phone: phone,
+                email: currentUserEmail
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error("Error API:", data);
-                if (data.errors) {
-                    // Muestra el primer error que encuentre
-                    const firstMsg = Object.values(data.errors)[0][0];
-                    alert("Error: " + firstMsg);
-                } else {
-                    alert("Error al guardar: " + (data.message || "Desconocido"));
-                }
-                return false;
-            }
-
             return true;
-
         } catch (error) {
             console.error(error);
-            alert("Error de conexión. Asegúrate de estar logueado.");
+            alert("Error al guardar: " + error.message);
             return false;
         } finally {
             btn.disabled = false;
@@ -214,14 +183,6 @@ document.addEventListener("DOMContentLoaded", async function () {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Finalizando...';
 
             try {
-                await fetch("/sanctum/csrf-cookie");
-                const csrfToken = getCookie("XSRF-TOKEN");
-                const commonHeaders = {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-XSRF-TOKEN": csrfToken,
-                };
-
                 const country = document.getElementById("iban_country").value;
                 const numberRaw = document.getElementById("iban_number").value.replace(/\s+/g, '');
 
@@ -230,74 +191,45 @@ document.addEventListener("DOMContentLoaded", async function () {
                 }
 
                 // Crear CUENTA
-                const accRes = await fetch("/api/accounts", {
-                    method: "POST",
-                    headers: commonHeaders,
-                    body: JSON.stringify({
-                        bank_name: document.getElementById("bank_name").value,
-                        iban: country + numberRaw,
-                        current_balance: document.getElementById("current_balance").value,
-                        color: document.getElementById("account_color").value,
-                    }),
+                const accResult = await apiRequest("/api/accounts", "POST", {
+                    bank_name: document.getElementById("bank_name").value,
+                    iban: country + numberRaw,
+                    current_balance: document.getElementById("current_balance").value,
+                    color: document.getElementById("account_color").value,
                 });
 
-                if (!accRes.ok) {
-                    const errorData = await accRes.json();
-                    throw new Error(errorData.message || "Error al crear cuenta");
-                }
-
-                const accResult = await accRes.json();
                 const accountId = accResult.account.id;
 
                 // Crear TARJETA (Opcional)
                 if (document.getElementById("has_card").checked) {
                     const typeRadio = document.querySelector('input[name="card_type"]:checked');
                     const expInput = document.getElementById("card_expiration").value;
-                    let expDate = "";
+                    const expDate = parseExpirationDate(expInput);
 
-                    // Caso A: Formato nativo del calendario (Chrome) -> YYYY-MM
-                    if (/^\d{4}-\d{2}$/.test(expInput)) {
-                        expDate = expInput + "-01";
-                    }
-                    // Caso B: El usuario lo escribió a mano (Firefox) -> MM/YYYY o MM/YY
-                    else if (/^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/.test(expInput)) {
-                        let parts = expInput.split('/');
-                        let month = parts[0];
-                        let year = parts[1].length === 2 ? "20" + parts[1] : parts[1]; // Si pone 28, lo convertimos a 2028
-                        expDate = `${year}-${month}-01`;
-                    }
-                    // Caso C: El usuario escribió cualquier otra cosa mal (Ej: "hola", "2028/12")
-                    else {
+                    if (!expDate) {
                         showNotification("Formato de caducidad inválido. Usa AAAA-MM o MM/AAAA", "error");
-                        return; // ¡Frenamos el código aquí para no provocar el error 500!
+                        return;
                     }
-                    await fetch("/api/cards", {
-                        method: "POST",
-                        headers: commonHeaders,
-                        body: JSON.stringify({
-                            account_id: accountId,
-                            alias: document.getElementById("card_alias").value,
-                            type: typeRadio ? typeRadio.value : "debit",
-                            last_4_digits: document.getElementById("card_digits").value,
-                            expiration_date: expDate,
-                            balance: 0,
-                        }),
+
+                    await apiRequest("/api/cards", "POST", {
+                        account_id: accountId,
+                        alias: document.getElementById("card_alias").value,
+                        type: typeRadio ? typeRadio.value : "debit",
+                        last_4_digits: document.getElementById("card_digits").value,
+                        expiration_date: expDate,
+                        balance: 0,
                     });
                 }
 
                 // Crear SOBRE (Opcional)
                 if (document.getElementById("has_envelope").checked) {
                     const selectedIconDiv = document.querySelector(".icon-option.selected");
-                    await fetch("/api/envelopes", {
-                        method: "POST",
-                        headers: commonHeaders,
-                        body: JSON.stringify({
-                            account_id: accountId,
-                            name: document.getElementById("env_name").value,
-                            target_amount: document.getElementById("env_target").value,
-                            allocated_amount: document.getElementById("env_allocated").value || 0,
-                            icon: selectedIconDiv ? selectedIconDiv.getAttribute("data-icon") : "fas fa-piggy-bank",
-                        }),
+                    await apiRequest("/api/envelopes", "POST", {
+                        account_id: accountId,
+                        name: document.getElementById("env_name").value,
+                        target_amount: document.getElementById("env_target").value,
+                        allocated_amount: document.getElementById("env_allocated").value || 0,
+                        icon: selectedIconDiv ? selectedIconDiv.getAttribute("data-icon") : "fas fa-piggy-bank",
                     });
                 }
 

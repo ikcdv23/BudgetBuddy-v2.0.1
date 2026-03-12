@@ -1,0 +1,522 @@
+============================================================
+  REDISEÑO COMPLETO "MIS TARJETAS" (2026-03-12)
+============================================================
+
+RESUMEN:
+Rediseño de la página Mis Tarjetas: layout full-width con grid 2 columnas
+(carrusel + panel detalle), transacciones independientes full-width,
+panel detalle con stats calculadas, highlight de tarjeta seleccionada.
+
+------------------------------------------------------------
+CAMBIOS ESTRUCTURALES:
+------------------------------------------------------------
+- Eliminado: desktop-grid > desktop-left-column (desperdiciaba 50% ancho)
+- Nuevo: tarjetas-top-grid (grid 2-col: carrusel izq + detalle der)
+- Nuevo: tarjetas-transactions-card (full-width independiente, max-height 500px)
+- Panel detalle: #card-detail-panel renderizado por JS
+
+------------------------------------------------------------
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+1. backend/resources/views/misTarjetas.blade.php
+   → Reemplazado desktop-grid/desktop-left-column por tarjetas-top-grid
+   → Card carrusel con clase tarjetas-carousel-card
+   → Card detalle con clase tarjeta-detail-card + div#card-detail-panel
+   → Transacciones movidas fuera del grid como card independiente
+   → Título cambiado: "Transacciones" → "Movimientos"
+
+2. backend/public/css/tarjetas.css
+   → NUEVOS ESTILOS:
+     - .tarjetas-top-grid: grid 2-col, gap 25px
+     - .tarjeta-detail-card: flex column
+     - .card-detail-header: icon + nombre + tipo (flex, gap 16px)
+     - .card-detail-icon: 56px, gradient bg (.visa-bg, .mastercard-bg)
+     - .card-detail-number: Courier New, letter-spacing 3px
+     - .card-detail-meta: filas caducidad/cuenta (flex between)
+     - .card-stats-grid: grid 2x2, gap 12px
+     - .card-stat-item: padding 14px, bg gray-50, border
+     - .card-detail-empty: empty state centered (min-height 250px)
+     - .mini-card.selected: outline 3px primary, translateY(-3px)
+     - .tarjetas-transactions-card .transactions-table: max-height 500px
+   → RESPONSIVE:
+     - ≤992px: tarjetas-top-grid → 1 columna
+     - ≤600px: panel detalle compacto (icon 44px, font sizes reducidos)
+     - Eliminada regla iPad landscape para desktop-grid (ya no existe)
+
+3. backend/public/js/tarjetas.js
+   → NUEVA FUNCIÓN: renderCardDetail(card) (~70 líneas)
+     - Renderiza panel con: icono tipo, alias, tipo/marca, últimos 4 dígitos
+     - Muestra caducidad formateada (MM/YYYY) y cuenta vinculada
+     - Calcula stats desde currentMovements: total movs, gastos, ingresos
+     - Estado vacío cuando card es null
+   → MODIFICADO: renderCards()
+     - Añade clase .selected a la mini-card del selectedCardId
+   → MODIFICADO: click handler de mini-cards
+     - Actualiza highlight (.selected) en todas las mini-cards
+     - Llama renderCardDetail(card) después de loadMovements()
+   → MODIFICADO: dropdown change handler
+     - parseInt del value, actualiza highlight y llama renderCardDetail
+   → MODIFICADO: init()
+     - Llama renderCardDetail() después de cargar todos los datos
+   → NUEVO DOM: dom.cardDetailPanel (#card-detail-panel)
+
+4. backend/public/css/app-dark-mode.css
+   → Añadidos overrides para nuevos componentes:
+     - .card-stat-item: background surface-2, border
+     - .card-detail-empty i: opacity 0.3
+     - .card-detail-number: color text-main
+     - .mini-card.selected: outline-color primary
+
+5. CLAUDE.md
+   → Actualizada descripción de misTarjetas.blade.php
+   → Añadida entrada en Last Changes Log
+
+------------------------------------------------------------
+LAYOUT RESULTADO (Desktop ≥1200px):
+------------------------------------------------------------
+┌──────────────────────────────────────────────────┐
+│  Mis tarjetas                        12 Mar 2026 │
+├─────────────────────┬────────────────────────────┤
+│  [Card1] [Card2] +  │  💳 Visa Oro               │
+│  ← scroll horiz →   │  **** **** **** 4523       │
+│                      │  Caduca: 08/28             │
+│                      │  Cuenta: BBVA - *1234      │
+│                      │  ┌Saldo┐ ┌Movs.┐          │
+│                      │  │€1234│ │ 23  │          │
+│                      │  ┌Gast.┐ ┌Ingr.┐          │
+│                      │  │-€456│ │+€789│          │
+├─────────────────────┴────────────────────────────┤
+│ Movimientos  [Todos][Ingresos][Pagos]  [+ Nuevo] │
+│ ─────────────────────────────────────────────────│
+│  Compra supermercado    12 Mar 2026      -€45.20 │
+│  Nómina marzo           01 Mar 2026    +€1200.00 │
+└──────────────────────────────────────────────────┘
+
+============================================================
+  TOGGLE DARK MODE + RESPONSIVE MEJORADO (2026-03-11)
+============================================================
+
+RESUMEN:
+1. Toggle manual de tema (light/dark/auto) en el header
+2. Responsive mejorado en toda la app
+3. Rediseño de tarjetas/movimientos para móvil (600px)
+
+------------------------------------------------------------
+PARTE A: TOGGLE DARK MODE
+------------------------------------------------------------
+
+PROBLEMA:
+- Dark mode solo funcionaba con el tema del OS (prefers-color-scheme)
+- No había forma manual de cambiar el tema
+
+SOLUCIÓN:
+- Migrado app-dark-mode.css: `@media (prefers-color-scheme: dark)` → `html[data-theme="dark"]`
+- 3 estados: Claro (sol), Oscuro (luna), Auto (medio-círculo)
+- Ciclo click: light → dark → auto → light
+- Persistencia en localStorage('bb-theme')
+- Script FOUC-prevention en <head> (antes de CSS) evita flash blanco
+- Modo auto escucha cambios del OS en tiempo real
+
+ARCHIVOS CREADOS:
+- backend/public/js/core/theme-toggle.js (~90 líneas)
+  → getPreference(), resolveTheme(), applyTheme(), cycleTheme()
+  → Escucha matchMedia change para modo auto
+  → Exporta window.cycleTheme, window.bindThemeToggle
+
+ARCHIVOS MODIFICADOS:
+- backend/public/css/app-dark-mode.css (~370 líneas)
+  → TODOS los selectores migrados: @media → html[data-theme="dark"] prefix
+  → :root variables → html[data-theme="dark"] { ... color-scheme: dark }
+  → Añadido bloque dark mode para mobile movement cards (600px)
+
+- backend/resources/views/components/app-header.blade.php
+  → Añadido <button id="theme-toggle-btn"> antes del avatar
+  → Usa clase .top-icon existente (40×40px circle)
+
+- backend/resources/views/layouts/budgetbuddy.blade.php
+  → Script FOUC-prevention inline en <head>
+  → <script src> de theme-toggle.js (después de api-client.js, antes de notifications.js)
+
+- backend/resources/views/setup.blade.php
+  → Script FOUC-prevention inline en <head>
+
+- backend/public/css/app-layout.css
+  → Transición rotación icono toggle (30deg on hover)
+
+COMPATIBILIDAD PJAX:
+- Sin cambios necesarios: header no se recarga, theme-toggle.js
+  está en core/ (filtrado por baseScripts), data-theme persiste en <html>
+
+------------------------------------------------------------
+PARTE B: RESPONSIVE MEJORADO
+------------------------------------------------------------
+
+FASE 1 — Fixes compartidos (app-forms.css, app-utilities.css):
+
+- app-forms.css:
+  → .card-title 480px: 25px → 18px (fix regresión)
+  → .page-title responsive: 992px→28px, 768px→24px, 480px→22px
+  → Centralizado: antes estaba duplicado en desktop/tarjetas/backajustes
+
+- app-utilities.css:
+  → .form-row-flex collapse: 600px → flex-direction: column
+
+FASE 2 — Rediseño tarjetas (tarjetas.css, breakpoint 600px):
+
+Tabla de movimientos → cards (CSS-only, sin cambiar HTML ni JS):
+  → thead: display: none
+  → table: min-width: unset (elimina scroll horizontal)
+  → Cada <tr>: flex-wrap, border-radius, padding, shadow
+  → td:nth-child(1) = descripción (100%, bold) — order: 1
+  → td:nth-child(2) = ID → display: none
+  → td:nth-child(3) = fecha (left, muted) — order: 2
+  → td:nth-child(4) = monto (right, bold) — order: 3
+  → td:nth-child(5) = categorías (100%) — order: 4
+
+Mini-cards swipe mode (600px):
+  → .mini-card: flex: 0 0 85vw, max-width 300px, scroll-snap-align: center
+  → .cards-section-wrapper: height: auto (no recorte)
+  → #cards-container: scroll-snap-type: x mandatory
+  → Ghost card: 60vw, max-width 220px
+
+Filtros touch-friendly (600px):
+  → .filter-btn: padding 10px 18px, min-height 44px (Apple HIG)
+  → .transactions-filters: overflow-x auto, flex-wrap nowrap
+
+FASE 3 — Limpieza duplicados:
+
+- desktop.css:
+  → Eliminado .card-title duplicado en 768px y 480px
+  → Añadido .dashboard-cards-grid .mini-card responsive (992px, 768px, 480px)
+
+- tarjetas.css:
+  → Eliminado .card-title duplicado en 768px
+
+- backajustes.css:
+  → Eliminado .page-title en 992px (28px) y 430px (32px)
+  → Eliminado .card-title en 992px (22px) y 430px (20px)
+
+------------------------------------------------------------
+DOCUMENTACIÓN:
+------------------------------------------------------------
+- CLAUDE.md actualizado: theme-toggle.js en arquitectura, toggle description,
+  responsive breakpoints, Last Changes Log
+
+============================================================
+  CORRECCIONES DARK MODE — (2026-03-11)
+============================================================
+
+RESUMEN:
+Corrección de estilos rotos en la página setup (wizard) y mejora
+del dark mode para sidebar y componentes de formulario.
+
+PROBLEMAS ENCONTRADOS:
+- setup.css usaba 5 variables CSS indefinidas (--secondary, --white,
+  --radius, --shadow, --text-light) que rompían el layout base
+- setup.blade.php no cargaba app-forms.css → botones (.btn-primary),
+  card-type-selector y type-option sin estilos
+- Inputs y selects en setup sin background-color/color explícitos →
+  fondo blanco del navegador en dark mode
+- .skip-toggle.active usaba #ecfdf5 hardcodeado → no se adaptaba
+- .type-option checked usaba rgba hardcodeado → no se adaptaba
+- Sidebar con background-color: white hardcodeado (sin variable)
+- color-scheme: dark fuera de selector (CSS inválido, ignorado)
+
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+1. backend/public/css/setup.css
+   → Variables indefinidas reemplazadas: --secondary→--gray-100,
+     --white→--surface-0, --radius→--radius-lg, --shadow→--shadow-lg,
+     --text-light→--text-muted
+   → .form-group input: añadido background-color: var(--surface-0),
+     color: var(--text-main)
+   → Nuevo: .form-group select con bg/color/border explícitos
+   → Nuevo: .form-group select:focus con outline verde
+   → .form-group input:focus: rgba hardcodeado → var(--primary-subtle)
+   → .skip-toggle.active: #ecfdf5 → var(--primary-subtle)
+
+2. backend/resources/views/setup.blade.php
+   → Añadido <link> a app-forms.css (btn-primary, card-type-selector)
+   → Reemplazados color: #6b7280 inline → color: var(--text-muted) (4x)
+
+3. backend/public/css/app-layout.css
+   → .sidebar: background-color: white → var(--surface-0)
+
+4. backend/public/css/app-dark-mode.css
+   → Añadidos overrides: .wizard-header, .btn-outline:hover,
+     .color-circle.selected, .step-dot, .country-select, .type-content
+   → color-scheme: dark movido dentro de :root {} (antes era inválido)
+
+5. backend/public/css/app-forms.css
+   → .type-option checked: rgba(33, 122, 74, 0.05) → var(--primary-subtle)
+
+6. CLAUDE.md
+   → Actualizado: setup ahora carga app-forms.css
+
+============================================================
+  MEJORA ESTÉTICA COMPLETA — CAMBIOS REALIZADOS (2026-03-11)
+============================================================
+
+RESUMEN:
+Modernización visual completa de BudgetBuddy sin cambiar HTML.
+- Texto negro puro (#000000) → gris suave (#111827)
+- Bordes pesados (#757575) → ligeros (#e5e7eb)
+- ~80 grises hardcodeados → variables CSS
+- Sistema de sombras expandido (6 niveles)
+- Cards con acento verde superior
+- Sidebar con indicador pill (estilo Discord)
+- Header con borde glassmorphism translúcido
+- Focus-visible global para accesibilidad con teclado
+- Dark mode automático (prefers-color-scheme)
+- Reduced motion (prefers-reduced-motion)
+
+------------------------------------------------------------
+ARCHIVOS CREADOS:
+------------------------------------------------------------
+1. backend/public/css/app-dark-mode.css (~250 líneas)
+   → Dark mode completo via @media (prefers-color-scheme: dark)
+   → Overrides: body, header, sidebar, mobile-nav, cards, modales
+     (ambos sistemas), inputs, botones, tablas, skeleton, tags,
+     filtros, estadísticas, ajustes, setup, notificaciones, scrollbars
+
+------------------------------------------------------------
+ARCHIVOS REESCRITOS:
+------------------------------------------------------------
+2. backend/public/css/app-variables.css (45 → 105 líneas)
+   → Nuevos tokens: escala de grises (--gray-50 a --gray-900),
+     sombras (--shadow-xs a --shadow-2xl), radios (--radius-sm a --radius-full),
+     transiciones (--transition-fast/normal/slow), superficies (--surface-0 a 3),
+     acentos suaves (--primary-subtle, --danger-subtle, etc.),
+     spacing (--space-1 a --space-12)
+   → Variables modificadas: --text-main (#000→#111827), --text-muted (#757575→#6b7280),
+     --border (#757575→#e5e7eb), --border-icon (#757575→#d1d5db),
+     --date-bg (#525050→var(--primary))
+   → @media (prefers-reduced-motion: reduce) global
+
+------------------------------------------------------------
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+3. backend/public/css/app-forms.css
+   → Cards: border-top: 3px solid var(--primary), shadow-md, hover→shadow-lg
+   → Botones: padding unificado 10px 16px, radius-md, :disabled, :focus-visible
+   → Inputs: focus-visible con outline green
+   → Grises: #6b7280→gray-500, #d1d5db→gray-300, #f9fafb→gray-50,
+     #e5e7eb→gray-200, #1f2937→gray-800, #374151→gray-700, #9ca3af→gray-400
+
+4. backend/public/css/app-modals.css
+   → Grises: #ffffff→surface-0, #f3f4f6→gray-100, #111827→gray-900,
+     #6b7280→gray-500, #e5e7eb→gray-200, #333→gray-700
+   → Radius: valores hardcodeados → variables
+
+5. backend/public/css/app-utilities.css
+   → Grises: #e5e7eb→gray-200, #6b7280→gray-500, #d1d5db→gray-300,
+     #f9fafb→gray-50, #374151→gray-700, #757575→text-muted
+   → Focus-visible global: a, button, select, textarea, [tabindex]
+   → Reset: :focus:not(:focus-visible) { outline: none }
+
+6. backend/public/css/app-layout.css
+   → Header: border → rgba(255,255,255,0.3) translúcido (glassmorphism)
+   → Sidebar: pill vertical (4px×20px) reemplaza dot (5px circle)
+   → Mobile nav: border-top translúcido
+   → Sombras: hardcodeadas → variables (shadow-sm)
+   → Transiciones: 0.2s → var(--transition-normal)
+
+7. backend/public/css/desktop.css
+   → Grises: #f0f0f0→gray-100, #e0e0e0→gray-200, #CCCCCC→gray-300,
+     #d1d5db→gray-300, #9ca3af→gray-400, #f3f4f6→gray-100,
+     #f9fafb→gray-50, #e5e7eb→gray-200
+
+8. backend/public/css/tarjetas.css
+   → Grises: #f1f1f1→gray-100, #d1d5db→gray-300, #9ca3af→gray-400,
+     #f3f4f6→gray-100, #4b5563→gray-600, #1f2937→gray-800,
+     #f9fafb→gray-50
+   → Filtros: .filter-btn.active con box-shadow: var(--shadow-sm)
+
+9. backend/public/css/backajustes.css
+   → #ccc→gray-300, #fafafa→gray-50
+
+10. backend/public/css/notification.css
+    → #fafafa→gray-50
+
+11. backend/public/css/setup.css
+    → #e5e7eb→gray-200, #f3f4f6→gray-100, #d1d5db→gray-300,
+      #374151→gray-700, #6b7280→gray-500, #f9fafb→gray-50
+
+12. backend/public/css/invoices-modal.css
+    → #eee→gray-200, #000→text-main, #757575→text-muted,
+      #f5f5f5→gray-100, #f9f9f9→gray-50, #ddd→gray-300
+
+13. backend/public/css/api-estadisticas.css
+    → rgba(117,117,117,0.2) → var(--gray-200)
+
+------------------------------------------------------------
+ARCHIVOS BLADE/JS MODIFICADOS:
+------------------------------------------------------------
+14. backend/resources/views/layouts/budgetbuddy.blade.php
+    → Añadido <link> a app-dark-mode.css después de app-variables.css
+
+15. backend/resources/views/setup.blade.php
+    → Añadido <link> a app-dark-mode.css después de app-variables.css
+
+16. backend/public/js/pjax-nav.js
+    → Añadido 'app-dark-mode' al array baseStyles (ambas instancias)
+
+------------------------------------------------------------
+NOTAS IMPORTANTES:
+------------------------------------------------------------
+- NO se tocaron: colores semánticos (#fee2e2 danger bg, #ecfdf5 green tint,
+  gradientes de mini-cards, colores de marca/brand)
+- El dark mode se activa automáticamente con el tema del OS
+  (prefers-color-scheme: dark). No hay toggle manual.
+- prefers-reduced-motion desactiva TODAS las animaciones/transiciones
+- Los grises ahora usan una escala consistente de Tailwind (50-900)
+- Las sombras tienen 6 niveles (xs → 2xl) para crear profundidad
+- Los radios usan tokens (sm → full) para consistencia
+
+============================================================
+  MODULARIZACIÓN JS — CAMBIOS REALIZADOS (2026-03-11)
+============================================================
+
+RESUMEN:
+Se completó la modularización de los archivos JavaScript.
+Los módulos core/ y modules/ que estaban creados pero sin integrar
+ahora son los archivos principales. Los archivos legacy se eliminaron.
+
+------------------------------------------------------------
+ARCHIVOS ELIMINADOS:
+------------------------------------------------------------
+1. backend/public/js/app-base.js
+   → Reemplazado por: js/core/utils.js (superset con formatCurrency + parseExpirationDate)
+
+2. backend/public/js/formatters.js (raíz)
+   → Reemplazado por: js/core/formatters.js (idéntico)
+
+3. backend/public/js/notifications.js (raíz)
+   → Reemplazado por: js/core/notifications.js (idéntico)
+
+------------------------------------------------------------
+DIRECTORIOS VACÍOS ELIMINADOS:
+------------------------------------------------------------
+4. backend/public/js/modal/
+5. backend/public/js/pages/
+6. backend/public/js/auth-user/
+7. backend/public/js/standalone/
+   → Eran estructura planificada que nunca se usó.
+
+------------------------------------------------------------
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+8. backend/public/js/core/api-client.js
+   → Quitado showNotification() del catch genérico para evitar doble notificación.
+     Ahora solo hace console.error + throw. Cada caller muestra su propio mensaje.
+
+9. backend/resources/views/layouts/budgetbuddy.blade.php
+   → Actualizado <script> tags: de formatters.js/app-base.js/notifications.js
+     a core/formatters.js, core/utils.js, core/api-client.js, core/notifications.js,
+     modules/drag-drop.js.
+
+10. backend/public/js/pjax-nav.js
+    → Actualizado baseScripts para excluir core/ y modules/ en vez de los nombres legacy.
+
+11. backend/public/js/tarjetas.js
+    → Eliminada apiRequest() local (~60 líneas) → usa window.apiRequest de core/api-client.js
+    → Eliminada formatCurrency() local (~10 líneas) → usa window.formatCurrency de core/utils.js
+    → Reemplazado drag-drop inline (~70 líneas) con window.initDragAndDrop() de modules/drag-drop.js
+
+12. backend/public/js/desktop.js
+    → Reemplazados ~10 bloques fetch inline con apiRequest()
+      (loadGoals, loadAccounts, loadCards, saveCard, saveMeta, deleteMeta,
+       createTag, createAccount, transfer)
+    → Reemplazado drag-drop inline de etiquetas (~80 líneas) con initDragAndDrop()
+    → Reemplazados 3 Intl.NumberFormat inline con formatCurrency()
+
+13. backend/public/js/setup.js
+    → Eliminada función getCookie() local → usa window.getCookie de core/utils.js
+    → Reemplazados fetch inline con apiRequest() (saveProfile, createAccount,
+      createCard, createEnvelope)
+    → Usa parseExpirationDate() de core/utils.js para validar fecha de tarjeta
+
+14. backend/resources/views/setup.blade.php
+    → Actualizado script tags: añadidos core/formatters.js, core/utils.js,
+      core/api-client.js antes de setup.js
+
+15. CLAUDE.md
+    → Actualizado: Pending Changes → Last Changes, File Organization actualizado
+
+============================================================
+  REFACTORIZACIÓN CSS — CAMBIOS REALIZADOS (2026-03-11)
+============================================================
+
+RESUMEN:
+Se eliminó ~40-50% de duplicación CSS. Los estilos compartidos (variables,
+layout, modales, formularios, utilidades) se extrajeron a 5 archivos nuevos.
+Los archivos de página se redujeron eliminando código duplicado.
+Inline styles en Blade se migraron a clases CSS donde fue posible.
+
+Total CSS: ~232 KB → ~150 KB (-35%)
+
+------------------------------------------------------------
+ARCHIVOS CREADOS:
+------------------------------------------------------------
+1. backend/public/css/app-variables.css (~1 KB)
+   → Variables :root unificadas (colores, fuentes, spacing, etc.)
+
+2. backend/public/css/app-layout.css (~8 KB)
+   → Body, containers, header, sidebar, mobile-nav, media queries compartidas
+
+3. backend/public/css/app-modals.css (~4 KB)
+   → Sistema de modales <dialog> (.tag-modal), icon/color pickers
+
+4. backend/public/css/app-forms.css (~7 KB)
+   → Formularios, cards, grid, page-header, botones, selectores
+
+5. backend/public/css/app-utilities.css (~3 KB)
+   → Clases utilitarias: .hidden, .d-flex, .flex-1, .gap-10, .gap-15,
+     .text-danger, .text-success, .text-blue, .text-amber, .text-sm,
+     .btn-transfer-blue, .btn-danger-outline, .btn-add-circle,
+     .form-row-flex, .form-hint-text, .form-label-bold,
+     .iban-input-wrapper, .select-wrapper, .select-icon-overlay,
+     .notification-flash, .btn-success
+
+------------------------------------------------------------
+ARCHIVOS ELIMINADOS:
+------------------------------------------------------------
+6. backend/public/css/backstyle.css (~28 KB)
+   → Era idéntico a landing.css. Ya no se referencia en ningún sitio.
+
+------------------------------------------------------------
+ARCHIVOS REDUCIDOS:
+------------------------------------------------------------
+7. backend/public/css/desktop.css (46 KB → 20 KB)
+   → Eliminados: :root, layout, header, sidebar, mobile-nav, modales,
+     formularios, media queries compartidas. Conservados: animaciones
+     propias, cuentas, tarjetas vinculadas, etiquetas, metas, skeleton.
+
+8. backend/public/css/tarjetas.css (44 KB → 17 KB)
+   → Eliminados: :root, layout, header, sidebar, modales, formularios.
+     Conservados: cards drag-drop, ghost card, transacciones, responsive.
+
+9. backend/public/css/backajustes.css (52 KB → 28 KB)
+   → Eliminados: :root, layout, header, sidebar.
+     Conservados: perfil, formularios ajustes (distintos), modales propios
+     (div overlay, no dialog), seguridad, danger zone, toggles.
+
+10. backend/public/css/api-estadisticas.css (17 KB → 9 KB)
+    → Eliminados: :root, header, avatar, iconos.
+      Conservados: .scrolled-active (único), market summary, charts, ETFs.
+
+11. backend/public/css/setup.css (4 KB → 5 KB)
+    → Se movió el bloque <style> inline de setup.blade.php aquí
+      (wizard steps, toggle switch, icon grid, color picker, animations).
+
+------------------------------------------------------------
+NOTAS IMPORTANTES:
+------------------------------------------------------------
+- Los inline styles `display: none` que son toggled por JS via
+  `element.style.display = ''` NO se pueden mover a clase .hidden
+  porque el JS no usa classList para toggle. Se conservan como inline.
+- Los inline `style="background-color: #..."` en color-option son
+  datos dinámicos y deben quedarse como inline.
+- backajustes.css tiene un sistema de modales DIFERENTE (div overlay
+  con header verde gradiente) al de desktop/tarjetas (dialog-based).
+  Sus modales NO se movieron a app-modals.css.
