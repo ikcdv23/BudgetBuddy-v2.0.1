@@ -15,9 +15,36 @@ class Card extends Model
         'account_id',
         'alias',
         'last_4_digits',
-        'expiration_date', 
+        'card_number',
+        'security_code',
+        'expiration_date',
         'type'
     ];
+
+    protected $hidden = [
+        'card_number',
+        'security_code',
+    ];
+
+    protected $casts = [
+        'card_number'   => 'encrypted',
+        'security_code' => 'encrypted',
+    ];
+
+    protected $appends = [
+        'has_full_number',
+        'has_security_code',
+    ];
+
+    public function getHasFullNumberAttribute(): bool
+    {
+        return !empty($this->card_number);
+    }
+
+    public function getHasSecurityCodeAttribute(): bool
+    {
+        return !empty($this->security_code);
+    }
 
     // Relación con la cuenta
     public function account(): BelongsTo

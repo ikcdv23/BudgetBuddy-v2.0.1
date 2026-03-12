@@ -11,6 +11,7 @@
             INDEX: '/api/cards',
             STORE: '/api/cards',
             DESTROY: '/api/cards/',
+            REVEAL: '/api/cards/',  // + cardId + '/reveal'
         },
         TAGS: {
             INDEX: '/api/tags',
@@ -67,8 +68,22 @@
         destinationIbanGroup: document.getElementById('destinationIbanGroup'),
         destinationIbanInput: document.getElementById('destinationIban'),
         movementCategorySelect: document.getElementById('movementCategory'),
-        dateContainer: document.getElementById('current-date')
+        dateContainer: document.getElementById('current-date'),
+        // Card creation: full number + security code
+        cardFullNumber: document.getElementById('card-full-number'),
+        cardSecurityCode: document.getElementById('card-security-code'),
+        cardDigits: document.getElementById('card-digits'),
+        // Reveal password modal
+        revealPasswordModal: document.getElementById('revealPasswordModal'),
+        closeRevealModal: document.getElementById('closeRevealModal'),
+        cancelRevealBtn: document.getElementById('cancelRevealBtn'),
+        confirmRevealBtn: document.getElementById('confirmRevealBtn'),
+        revealPasswordInput: document.getElementById('reveal-password'),
+        revealPasswordError: document.getElementById('reveal-password-error')
     };
+
+    // Estado para el modal de reveal
+    let pendingRevealCardId = null;
 
     // ==========================================
     // 4. HELPER FUNCTIONS
@@ -86,6 +101,71 @@
     }
 
     // apiRequest → window.apiRequest (core/api-client.js)
+
+    // ==========================================
+    // 4b. AUTO-FILL ÚLTIMOS 4 DÍGITOS + REVEAL
+    // ==========================================
+    if (dom.cardFullNumber) {
+        dom.cardFullNumber.addEventListener('input', function () {
+            const raw = this.dataset.rawValue || this.value.replace(/\D/g, '');
+            if (raw.length >= 4) {
+                dom.cardDigits.value = raw.slice(-4);
+                dom.cardDigits.dataset.rawValue = raw.slice(-4);
+                dom.cardDigits.readOnly = true;
+                dom.cardDigits.style.opacity = '0.6';
+            } else if (raw.length === 0) {
+                dom.cardDigits.readOnly = false;
+                dom.cardDigits.style.opacity = '1';
+                dom.cardDigits.value = '';
+                dom.cardDigits.dataset.rawValue = '';
+            }
+        });
+    }
+
+    function openRevealModal(cardId) {
+        pendingRevealCardId = cardId;
+        if (dom.revealPasswordInput) dom.revealPasswordInput.value = '';
+        if (dom.revealPasswordError) {
+            dom.revealPasswordError.style.display = 'none';
+            dom.revealPasswordError.textContent = '';
+        }
+        if (dom.revealPasswordModal) dom.revealPasswordModal.showModal();
+    }
+
+    function closeRevealModal() {
+        pendingRevealCardId = null;
+        if (dom.revealPasswordModal) dom.revealPasswordModal.close();
+    }
+
+    async function revealSensitiveData(cardId, password) {
+        try {
+            const data = await apiRequest(API.CARDS.REVEAL + cardId + '/reveal', 'POST', { password });
+            return data;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    function formatCardNumberDisplay(num) {
+        if (!num) return '';
+        return num.match(/.{1,4}/g)?.join(' ') || num;
+    }
+
+    function copyToClipboard(text, btnEl) {
+        navigator.clipboard.writeText(text).then(function () {
+            showNotification('Copiado al portapapeles', 'success');
+            if (btnEl) {
+                btnEl.classList.add('copied');
+                btnEl.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(function () {
+                    btnEl.classList.remove('copied');
+                    btnEl.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 2000);
+            }
+        }).catch(function () {
+            showNotification('No se pudo copiar', 'error');
+        });
+    }
 
     // ==========================================
     // 5. ЗАВАНТАЖЕННЯ ДАНИХ
@@ -232,10 +312,9 @@
         try {
             console.log('Creating movement:', movementData);
 
-            // Для витрат робимо суму негативною
-            if (movementData.type === 'gasto') {
-                movementData.amount = -Math.abs(movementData.amount);
-            }
+            // El backend ya maneja el signo del amount según el tipo
+            // Siempre enviar positivo
+            movementData.amount = Math.abs(movementData.amount);
 
             const result = await apiRequest(API.MOVEMENTS.STORE, 'POST', movementData);
             if (result) {
@@ -245,6 +324,7 @@
             }
         } catch (error) {
             console.error('Error creating movement:', error);
+            showNotification(error.message || 'Error al crear el movimiento', 'error');
             return false;
         }
     }
@@ -467,6 +547,49 @@
             .filter(m => parseFloat(m.amount) > 0)
             .reduce((sum, m) => sum + parseFloat(m.amount), 0);
 
+        // Campos sensibles HTML
+        let sensitiveHTML = '';
+        if (card.has_full_number || card.has_security_code) {
+            sensitiveHTML += '<div class="card-sensitive-fields">';
+            if (card.has_full_number) {
+                sensitiveHTML += `
+                    <div class="card-sensitive-field" data-field="card_number">
+                        <div class="sensitive-label">Numero de tarjeta</div>
+                        <div class="sensitive-value">
+                            <span class="sensitive-masked">&bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; &bull;&bull;&bull;&bull; ${escapeHTML(card.last_4_digits || '0000')}</span>
+                            <span class="sensitive-revealed" style="display:none"></span>
+                        </div>
+                        <div class="sensitive-actions">
+                            <button class="btn-reveal" title="Mostrar numero completo" data-card-id="${card.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-copy" title="Copiar al portapapeles" style="display:none" data-field="card_number">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            }
+            if (card.has_security_code) {
+                sensitiveHTML += `
+                    <div class="card-sensitive-field" data-field="security_code">
+                        <div class="sensitive-label">Codigo de seguridad</div>
+                        <div class="sensitive-value">
+                            <span class="sensitive-masked">&bull;&bull;&bull;</span>
+                            <span class="sensitive-revealed" style="display:none"></span>
+                        </div>
+                        <div class="sensitive-actions">
+                            <button class="btn-reveal" title="Mostrar codigo" data-card-id="${card.id}">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn-copy" title="Copiar al portapapeles" style="display:none" data-field="security_code">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            }
+            sensitiveHTML += '</div>';
+        }
+
         panel.innerHTML = `
             <div class="card-detail-header">
                 <div class="card-detail-icon ${escapeHTML(visualType)}-bg">
@@ -490,6 +613,7 @@
                     <span class="card-detail-meta-value">${escapeHTML(bankName)} ${escapeHTML(shortIban)}</span>
                 </div>
             </div>
+            ${sensitiveHTML}
             <div class="card-stats-grid">
                 <div class="card-stat-item">
                     <div class="card-stat-label">Saldo</div>
@@ -509,6 +633,21 @@
                 </div>
             </div>
         `;
+
+        // Bind reveal buttons
+        panel.querySelectorAll('.btn-reveal').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                openRevealModal(card.id);
+            });
+        });
+
+        // Bind copy buttons (will be shown after reveal)
+        panel.querySelectorAll('.btn-copy').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const text = this.dataset.revealedValue || '';
+                copyToClipboard(text, this);
+            });
+        });
     }
 
     function renderMovements() {
@@ -857,9 +996,23 @@
             const digits = document.getElementById('card-digits').value;
             const expInput = document.getElementById('card-exp').value;
             const typeRadio = document.querySelector('input[name="card_type"]:checked');
+            const fullNumberRaw = dom.cardFullNumber ? (dom.cardFullNumber.dataset.rawValue || dom.cardFullNumber.value.replace(/\D/g, '')) : '';
+            const securityCode = dom.cardSecurityCode ? dom.cardSecurityCode.value.replace(/\D/g, '') : '';
 
             if (!accountId || !alias || !digits || !expInput || digits.length !== 4 || !/^\d{4}$/.test(digits)) {
                 showNotification('Por favor, complete todos los campos correctamente', 'error');
+                return;
+            }
+
+            // Validar número completo si se proporcionó
+            if (fullNumberRaw && (fullNumberRaw.length < 13 || fullNumberRaw.length > 19)) {
+                showNotification('El numero de tarjeta debe tener entre 13 y 19 digitos', 'error');
+                return;
+            }
+
+            // Validar código de seguridad si se proporcionó
+            if (securityCode && (securityCode.length < 3 || securityCode.length > 7)) {
+                showNotification('El codigo de seguridad debe tener entre 3 y 7 digitos', 'error');
                 return;
             }
 
@@ -878,10 +1031,22 @@
                     expiration_date: expDate
                 };
 
+                if (fullNumberRaw) {
+                    cardData.card_number = fullNumberRaw;
+                }
+                if (securityCode) {
+                    cardData.security_code = securityCode;
+                }
+
                 const success = await createCard(cardData);
                 if (success) {
                     dom.cardModal.close();
                     dom.createCardForm.reset();
+                    // Reset readonly state on digits field
+                    if (dom.cardDigits) {
+                        dom.cardDigits.readOnly = false;
+                        dom.cardDigits.style.opacity = '1';
+                    }
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -983,6 +1148,105 @@
             }
         });
     }
+    // ==========================================
+    // 9b. REVEAL MODAL HANDLERS
+    // ==========================================
+    if (dom.closeRevealModal) {
+        dom.closeRevealModal.addEventListener('click', closeRevealModal);
+    }
+    if (dom.cancelRevealBtn) {
+        dom.cancelRevealBtn.addEventListener('click', closeRevealModal);
+    }
+    if (dom.confirmRevealBtn) {
+        dom.confirmRevealBtn.addEventListener('click', async function () {
+            const password = dom.revealPasswordInput ? dom.revealPasswordInput.value : '';
+            if (!password) {
+                if (dom.revealPasswordError) {
+                    dom.revealPasswordError.textContent = 'Introduce tu contrasena';
+                    dom.revealPasswordError.style.display = 'block';
+                }
+                return;
+            }
+
+            const originalText = dom.confirmRevealBtn.innerHTML;
+            dom.confirmRevealBtn.disabled = true;
+            dom.confirmRevealBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+
+            try {
+                const data = await revealSensitiveData(pendingRevealCardId, password);
+                closeRevealModal();
+
+                // Update the detail panel with revealed data
+                const panel = dom.cardDetailPanel;
+                if (panel && data) {
+                    if (data.card_number) {
+                        const field = panel.querySelector('[data-field="card_number"]');
+                        if (field) {
+                            const masked = field.querySelector('.sensitive-masked');
+                            const revealed = field.querySelector('.sensitive-revealed');
+                            const revealBtn = field.querySelector('.btn-reveal');
+                            const copyBtn = field.querySelector('.btn-copy');
+                            if (masked) masked.style.display = 'none';
+                            if (revealed) {
+                                revealed.textContent = formatCardNumberDisplay(data.card_number);
+                                revealed.style.display = '';
+                            }
+                            if (revealBtn) {
+                                revealBtn.style.display = 'none';
+                            }
+                            if (copyBtn) {
+                                copyBtn.style.display = '';
+                                copyBtn.dataset.revealedValue = data.card_number;
+                            }
+                        }
+                    }
+                    if (data.security_code) {
+                        const field = panel.querySelector('[data-field="security_code"]');
+                        if (field) {
+                            const masked = field.querySelector('.sensitive-masked');
+                            const revealed = field.querySelector('.sensitive-revealed');
+                            const revealBtn = field.querySelector('.btn-reveal');
+                            const copyBtn = field.querySelector('.btn-copy');
+                            if (masked) masked.style.display = 'none';
+                            if (revealed) {
+                                revealed.textContent = data.security_code;
+                                revealed.style.display = '';
+                            }
+                            if (revealBtn) {
+                                revealBtn.style.display = 'none';
+                            }
+                            if (copyBtn) {
+                                copyBtn.style.display = '';
+                                copyBtn.dataset.revealedValue = data.security_code;
+                            }
+                        }
+                    }
+                }
+
+                showNotification('Datos revelados correctamente', 'success');
+            } catch (error) {
+                console.error('Reveal error:', error);
+                if (dom.revealPasswordError) {
+                    dom.revealPasswordError.textContent = 'Contrasena incorrecta';
+                    dom.revealPasswordError.style.display = 'block';
+                }
+            } finally {
+                dom.confirmRevealBtn.disabled = false;
+                dom.confirmRevealBtn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // Allow Enter key to submit reveal modal
+    if (dom.revealPasswordInput) {
+        dom.revealPasswordInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (dom.confirmRevealBtn) dom.confirmRevealBtn.click();
+            }
+        });
+    }
+
     // ==========================================
     // 10. INITIALIZATION
     // ==========================================

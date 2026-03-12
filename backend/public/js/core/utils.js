@@ -105,7 +105,7 @@
             : '#f59e0b';
 
         notification.style.cssText =
-            'position:fixed;top:20px;right:20px;' +
+            'position:fixed;top:80px;right:20px;' +
             'background-color:' + bgColor + ';' +
             'color:' + textColor + ';' +
             'padding:14px 18px;border-radius:12px;' +
@@ -139,7 +139,7 @@
 
         // Responsive
         if (window.innerWidth <= 768) {
-            notification.style.top = '10px';
+            notification.style.top = '70px';
             notification.style.right = '10px';
             notification.style.left = '10px';
             notification.style.maxWidth = 'calc(100% - 20px)';
@@ -156,12 +156,24 @@
 
     // ========== PERFIL DE USUARIO (Avatar) ==========
 
+    // Presets para renderizar avatares en el header (mismo mapa que backajustes.js)
+    var HEADER_AVATAR_PRESETS = {
+        'preset-1': { icon: 'fa-graduation-cap', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
+        'preset-2': { icon: 'fa-piggy-bank',     gradient: 'linear-gradient(135deg, #ec4899, #be185d)' },
+        'preset-3': { icon: 'fa-chart-line',      gradient: 'linear-gradient(135deg, #10b981, #047857)' },
+        'preset-4': { icon: 'fa-rocket',          gradient: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+        'preset-5': { icon: 'fa-lightbulb',       gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+        'preset-6': { icon: 'fa-star',            gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
+        'preset-7': { icon: 'fa-bullseye',        gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
+        'preset-8': { icon: 'fa-flask',           gradient: 'linear-gradient(135deg, #6366f1, #4338ca)' }
+    };
+
     // Cache del perfil — se carga UNA vez y se reutiliza en navegaciones PJAX
     var userProfileCache = null;
 
     function loadUserProfile() {
         if (userProfileCache) {
-            updateAvatarUI(userProfileCache.name);
+            updateAvatarUI(userProfileCache);
             return Promise.resolve(userProfileCache);
         }
 
@@ -175,7 +187,7 @@
         })
         .then(function (user) {
             userProfileCache = user;
-            updateAvatarUI(user.name);
+            updateAvatarUI(user);
             return user;
         })
         .catch(function (error) {
@@ -183,18 +195,49 @@
         });
     }
 
-    function updateAvatarUI(fullName) {
+    function updateAvatarUI(userOrName) {
         var el = document.querySelector('.user-avatar-top');
-        if (!el || !fullName) return;
+        if (!el) return;
 
-        var parts = fullName.trim().split(' ');
-        var initials = parts[0].charAt(0).toUpperCase();
-        if (parts.length > 1) {
-            initials += parts[parts.length - 1].charAt(0).toUpperCase();
+        // Support both old (string name) and new (user object) signatures
+        var fullName, avatar;
+        if (typeof userOrName === 'string') {
+            fullName = userOrName;
+            avatar = null;
+        } else if (userOrName && typeof userOrName === 'object') {
+            fullName = userOrName.name || '';
+            avatar = (userOrName.profile && userOrName.profile.avatar) || null;
+        } else {
+            return;
         }
 
-        el.textContent = initials;
-        el.title = fullName;
+        if (avatar && HEADER_AVATAR_PRESETS[avatar]) {
+            var preset = HEADER_AVATAR_PRESETS[avatar];
+            el.className = 'user-avatar-top avatar-preset';
+            el.setAttribute('data-preset', avatar);
+            el.style.background = preset.gradient;
+            el.innerHTML = '<i class="fas ' + preset.icon + '" style="color:white;font-size:16px;"></i>';
+            el.title = fullName;
+        } else if (avatar && !avatar.startsWith('preset-')) {
+            el.className = 'user-avatar-top avatar-photo';
+            el.style.background = 'none';
+            el.innerHTML = '<img src="/storage/' + escapeHTML(avatar) + '" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+            el.title = fullName;
+        } else {
+            // Initials fallback
+            el.className = 'user-avatar-top';
+            el.style.background = '';
+            el.innerHTML = '';
+            if (fullName) {
+                var parts = fullName.trim().split(' ');
+                var initials = parts[0].charAt(0).toUpperCase();
+                if (parts.length > 1) {
+                    initials += parts[parts.length - 1].charAt(0).toUpperCase();
+                }
+                el.textContent = initials;
+                el.title = fullName;
+            }
+        }
     }
 
     function refreshUserProfile() {
@@ -204,6 +247,62 @@
 
     // Cargar perfil al inicio (una sola vez)
     loadUserProfile();
+
+    // ========== AVATAR DROPDOWN (Header) ==========
+
+    function initAvatarDropdown() {
+        var avatarBtn = document.getElementById('header-avatar-btn');
+        var dropdown = document.getElementById('avatar-dropdown');
+        var logoutBtn = document.getElementById('header-logout-btn');
+
+        if (!avatarBtn || !dropdown) return;
+
+        // Toggle dropdown on avatar click
+        avatarBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('open');
+        });
+
+        // Close on click outside
+        document.addEventListener('click', function (e) {
+            if (!dropdown.contains(e.target) && e.target !== avatarBtn) {
+                dropdown.classList.remove('open');
+            }
+        });
+
+        // Close on Escape
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') dropdown.classList.remove('open');
+        });
+
+        // Logout
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                dropdown.classList.remove('open');
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/logout';
+                var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                if (csrfMeta) {
+                    var input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = '_token';
+                    input.value = csrfMeta.content;
+                    form.appendChild(input);
+                }
+                document.body.appendChild(form);
+                form.submit();
+            });
+        }
+    }
+
+    // Init dropdown (works on full load + PJAX since header never reloads)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAvatarDropdown);
+    } else {
+        initAvatarDropdown();
+    }
 
     // ========== EXPORTAR A WINDOW ==========
 

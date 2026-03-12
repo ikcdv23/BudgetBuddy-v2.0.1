@@ -12,8 +12,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     // ==========================================
     try {
         // Hacemos una llamada segura para intentar ver si la sesión está viva
-        const res = await fetch("/ajustes", {
-            headers: { "Accept": "application/json" }
+        const res = await fetch("/api/profile", {
+            headers: { "Accept": "application/json" },
+            credentials: "same-origin"
         });
 
         // Verificamos si la respuesta es JSON real antes de leerla
@@ -99,7 +100,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
 
         try {
-            await apiRequest("/ajustes", "PUT", {
+            await apiRequest("/api/profile", "PUT", {
                 first_name: firstName,
                 last_name: lastName,
                 phone_country_code: phoneCountryCode,

@@ -133,15 +133,32 @@
                 </div>
             </div>
 
+            <div class="form-group">
+                <label for="card-full-number">Numero de tarjeta (opcional)</label>
+                <input type="text" id="card-full-number"
+                       placeholder="1234 5678 9012 3456" maxlength="23"
+                       inputmode="numeric" data-format="card-number"
+                       autocomplete="off" />
+                <span class="form-hint">Si lo introduces, los ultimos 4 digitos se rellenan automaticamente</span>
+            </div>
+
             <div class="form-row-flex">
                 <div class="form-group flex-1">
-                    <label for="card-digits">Últimos 4 dígitos</label>
+                    <label for="card-digits">Ultimos 4 digitos</label>
                     <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" />
                 </div>
                 <div class="form-group flex-1">
-                    <label for="card-exp">Caducidad</label>
-                    <input type="month" id="card-exp" required />
+                    <label for="card-security-code">Codigo de seguridad (opcional)</label>
+                    <input type="password" id="card-security-code"
+                           placeholder="&bull;&bull;&bull;" maxlength="7"
+                           inputmode="numeric" data-format="digits"
+                           autocomplete="off" />
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="card-exp">Caducidad</label>
+                <input type="month" id="card-exp" required />
             </div>
         </form>
 
@@ -267,6 +284,31 @@
         <div class="modal-footer">
             <button class="btn-secondary" id="cancelMovementBtn">Cancelar</button>
             <button class="btn-primary" id="saveMovementBtn">Guardar Movimiento</button>
+        </div>
+    </div>
+</dialog>
+<!-- Modal Revelar Datos Sensibles -->
+<dialog id="revealPasswordModal" class="tag-modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-lock"></i> Verificar identidad</h3>
+            <button class="close-modal" id="closeRevealModal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="margin-bottom: 16px; color: var(--text-muted); font-size: 14px;">
+                Introduce tu contrasena para ver los datos sensibles de esta tarjeta.
+            </p>
+            <div class="form-group">
+                <label for="reveal-password">Contrasena</label>
+                <input type="password" id="reveal-password" placeholder="Tu contrasena" required autocomplete="current-password" />
+                <span class="form-hint text-danger" id="reveal-password-error" style="display: none;"></span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" id="cancelRevealBtn">Cancelar</button>
+            <button class="btn-primary" id="confirmRevealBtn">
+                <i class="fas fa-eye"></i> Revelar
+            </button>
         </div>
     </div>
 </dialog>

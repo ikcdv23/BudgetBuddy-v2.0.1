@@ -29,11 +29,14 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
 
     // 1. Usuario y Perfil
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return $request->user()->load('profile');
     });
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
-    Route::post('/logout', [ProfileController::class, 'logout']);
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
+    Route::get('/profile/export', [ProfileController::class, 'exportMovements']);
+    Route::delete('/profile/account', [ProfileController::class, 'deleteAccount']);
 
     // 2. Tags
     Route::get('/tags', [TagController::class, 'index']);
@@ -51,6 +54,7 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     Route::get('/cards', [CardController::class, 'index']);
     Route::post('/cards', [CardController::class, 'store']);
     Route::delete('/cards/{card}', [CardController::class, 'destroy']);
+    Route::post('/cards/{card}/reveal', [CardController::class, 'revealSensitive']);
 
     // 5. Sobres / Envelopes
     Route::get('/envelopes', [EnvelopeController::class, 'index']);

@@ -6,47 +6,61 @@ use Illuminate\Http\Request;
 use App\Models\Card;
 use App\Models\Account;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
-class CardController extends Controller{
+class CardController extends Controller
+{
+    public function index()
+    {
+        $user = Auth::user();
+        $cards = Card::whereHas('account', function ($query) use ($user) {
+            $query->where('user_id', $user->id);
+        })->with('account')->limit(100)->get();
 
-        public function index()
-        {
-            // Отримати всі картки користувача через його рахунки
-            $user = Auth::user();
-            $cards = Card::whereHas('account', function($query) use ($user) {
-                $query->where('user_id', $user->id);
-            })->with('account')->limit(100)->get();
-            
-            return response()->json($cards);
+        return response()->json($cards);
+    }
+
+    public function destroy(Card $card)
+    {
+        if ($card->account->user_id !== Auth::id()) {
+            return response()->json(['message' => 'No autorizado'], 403);
         }
 
-        public function destroy(Card $card)
-        {
-            // Перевірити, чи картка належить користувачеві
-            if ($card->account->user_id !== Auth::id()) {
-                return response()->json(['message' => 'No autorizado'], 403);
-            }
-            
-            $card->delete();
-            
-            return response()->json([
-                'message' => 'Tarjeta eliminada correctamente',
-                'success' => true
-            ], 200);
-        }
+        $card->delete();
+
+        return response()->json([
+            'message' => 'Tarjeta eliminada correctamente',
+            'success' => true
+        ], 200);
+    }
+
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'account_id' => 'required|exists:accounts,id',
-                'alias' => 'required|string|max:50',
-                'last_4_digits' => 'required|string|size:4', 
-                'expiration_date' => 'required|date',           // YYYY-MM-DD
-                'type' => 'required|in:credit,debit',
-            ]);
+            $rules = [
+                'account_id'      => 'required|exists:accounts,id',
+                'alias'           => 'required|string|max:50',
+                'expiration_date' => 'required|date',
+                'type'            => 'required|in:credit,debit',
+                'card_number'     => 'nullable|string|min:13|max:19|regex:/^\d+$/',
+                'security_code'   => 'nullable|string|min:3|max:7|regex:/^\d+$/',
+            ];
 
-            // 2. Перевірка власності акаунта
+            // last_4_digits obligatorio solo si no se proporciona card_number
+            if ($request->filled('card_number')) {
+                $rules['last_4_digits'] = 'nullable|string|size:4';
+            } else {
+                $rules['last_4_digits'] = 'required|string|size:4';
+            }
+
+            $validated = $request->validate($rules);
+
+            // Si hay card_number, extraer últimos 4 dígitos automáticamente
+            if (!empty($validated['card_number'])) {
+                $validated['last_4_digits'] = substr($validated['card_number'], -4);
+            }
+
             $account = Account::where('id', $validated['account_id'])
                 ->where('user_id', Auth::id())
                 ->first();
@@ -57,13 +71,14 @@ class CardController extends Controller{
                 ], 403);
             }
 
-            // 3. Створення карти
             $card = Card::create([
-                'account_id' => $account->id,
-                'alias' => $validated['alias'],
-                'last_4_digits' => $validated['last_4_digits'], // ← Перейменування
+                'account_id'    => $account->id,
+                'alias'         => $validated['alias'],
+                'type'          => $validated['type'],
+                'last_4_digits' => $validated['last_4_digits'],
                 'expiration_date' => $validated['expiration_date'],
-                'type' => $validated['type']
+                'card_number'   => $validated['card_number'] ?? null,
+                'security_code' => $validated['security_code'] ?? null,
             ]);
 
             return response()->json([
@@ -81,5 +96,29 @@ class CardController extends Controller{
                 'message' => 'Error al crear la tarjeta',
             ], 500);
         }
+    }
+
+    public function revealSensitive(Request $request, Card $card)
+    {
+        $user = $request->user();
+        $userAccountIds = $user->accounts()->pluck('id');
+
+        if (!$userAccountIds->contains($card->account_id)) {
+            return response()->json(['message' => 'No autorizado'], 403);
+        }
+
+        $request->validate(['password' => 'required|string']);
+
+        if (!Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Contraseña incorrecta',
+                'errors'  => ['password' => ['La contraseña no es correcta']],
+            ], 422);
+        }
+
+        return response()->json([
+            'card_number'   => $card->card_number,
+            'security_code' => $card->security_code,
+        ]);
     }
 }

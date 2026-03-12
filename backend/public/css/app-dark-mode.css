@@ -98,6 +98,18 @@ html[data-theme="dark"] .desktop-header.scrolled-active {
 }
 
 /* =========================================== */
+/* AVATAR DROPDOWN */
+/* =========================================== */
+html[data-theme="dark"] .avatar-dropdown {
+    background: #1e293b;
+    border-color: var(--border);
+}
+
+html[data-theme="dark"] .avatar-dropdown-item:hover {
+    background-color: #334155;
+}
+
+/* =========================================== */
 /* SIDEBAR */
 /* =========================================== */
 html[data-theme="dark"] .sidebar {
@@ -398,49 +410,85 @@ html[data-theme="dark"] .disclaimer p {
 /* =========================================== */
 /* AJUSTES PAGE */
 /* =========================================== */
-html[data-theme="dark"] .profile-avatar-large {
+html[data-theme="dark"] .settings-tabs {
+    background: #1e293b;
+    border-color: var(--border);
+}
+
+html[data-theme="dark"] .settings-tab {
+    color: var(--text-muted);
+}
+
+html[data-theme="dark"] .settings-tab:hover {
+    background: rgba(52, 211, 153, 0.08);
+    color: var(--text-main);
+}
+
+html[data-theme="dark"] .settings-tab.active {
+    background: #334155;
+    color: var(--primary);
+    box-shadow: none;
+}
+
+html[data-theme="dark"] .profile-hero {
+    background: #1e293b;
+    border-color: var(--border);
+    border-top-color: var(--primary);
+}
+
+html[data-theme="dark"] .avatar-content {
     border-color: #334155;
 }
 
-html[data-theme="dark"] .toggle-label {
-    background-color: #475569;
+html[data-theme="dark"] .avatar-edit-overlay {
+    border-color: #1e293b;
 }
 
-html[data-theme="dark"] .currency-option {
+html[data-theme="dark"] .theme-option {
     background: #1e293b;
     border-color: var(--border);
 }
 
-html[data-theme="dark"] .currency-option:hover {
+html[data-theme="dark"] .theme-option:hover {
     background-color: rgba(52, 211, 153, 0.05);
 }
 
-html[data-theme="dark"] .export-option {
+html[data-theme="dark"] .theme-option.active {
+    background-color: rgba(52, 211, 153, 0.08);
+}
+
+html[data-theme="dark"] .future-plan-item {
     background: #1e293b;
     border-color: var(--border);
 }
 
-html[data-theme="dark"] .export-option:hover {
+html[data-theme="dark"] .future-plan-badge {
+    background: rgba(52, 211, 153, 0.12);
+}
+
+html[data-theme="dark"] .avatar-preset-option.selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.3), 0 4px 12px rgba(0,0,0,0.3);
+}
+
+html[data-theme="dark"] .avatar-upload-zone {
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
+html[data-theme="dark"] .avatar-upload-zone:hover,
+html[data-theme="dark"] .avatar-upload-zone.drag-over {
+    border-color: var(--primary);
     background-color: rgba(52, 211, 153, 0.05);
 }
 
-html[data-theme="dark"] .export-preview {
-    background-color: #0f172a;
+html[data-theme="dark"] .avatar-upload-preview {
     border-color: var(--border);
 }
 
-html[data-theme="dark"] .session-item {
-    background: #1e293b;
-    border-color: var(--border);
-}
-
-html[data-theme="dark"] .session-item:hover {
-    background-color: rgba(52, 211, 153, 0.05);
-}
-
-html[data-theme="dark"] .session-action-btn {
-    background: #1e293b;
-    border-color: var(--border);
+html[data-theme="dark"] .avatar-divider::before,
+html[data-theme="dark"] .avatar-divider::after {
+    background: var(--border);
 }
 
 html[data-theme="dark"] .danger-item {
@@ -451,6 +499,10 @@ html[data-theme="dark"] .danger-item {
 html[data-theme="dark"] .logout-item {
     background-color: rgba(52, 211, 153, 0.08);
     border-color: rgba(52, 211, 153, 0.2);
+}
+
+html[data-theme="dark"] .modal-footer {
+    background-color: #1e293b;
 }
 
 /* =========================================== */
@@ -578,6 +630,30 @@ html[data-theme="dark"] .card-detail-empty i {
 
 html[data-theme="dark"] .card-detail-number {
     color: var(--text-main);
+}
+
+html[data-theme="dark"] .card-sensitive-field {
+    border-bottom-color: var(--border);
+}
+
+html[data-theme="dark"] .btn-reveal,
+html[data-theme="dark"] .btn-copy {
+    background: var(--surface-2);
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
+html[data-theme="dark"] .btn-reveal:hover,
+html[data-theme="dark"] .btn-copy:hover {
+    background: var(--hover-green);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+html[data-theme="dark"] .btn-copy.copied {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
 }
 
 html[data-theme="dark"] .mini-card.selected {

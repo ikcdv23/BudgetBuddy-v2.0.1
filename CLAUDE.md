@@ -20,9 +20,9 @@ All traffic goes through Nginx → backend:8000. The landing page (`/`) is a sta
 - **Components**: `components/app-header.blade.php`, `components/sidebar-nav.blade.php`, `components/mobile-nav.blade.php` — reusable nav with `$active` prop (string: 'desktop', 'estadisticas', 'misTarjetas', 'ajustes') for active state.
 - **Pages that extend the layout** (pass `$currentPage` from route/controller):
   - `desktop.blade.php` — Dashboard: cuentas, tarjetas vinculadas, etiquetas, metas. JS: `desktop.js`. Modals: account, card, tag, goal, transfer.
-  - `misTarjetas.blade.php` — Gestión de tarjetas + movimientos. Layout 2-col: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width debajo. JS: `tarjetas.js` (incluye `renderCardDetail()`). Modals: card, movement.
+  - `misTarjetas.blade.php` — Gestión de tarjetas + movimientos. Layout 2-col: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width debajo. JS: `tarjetas.js` (incluye `renderCardDetail()` con campos sensibles reveal). Modals: card (con número completo y código seguridad opcionales), movement, reveal password (verificación contraseña para ver datos sensibles cifrados).
   - `estadisticas.blade.php` — Dashboard educativo de mercado (ETFs). JS: `api-estadisticas.js` + Chart.js CDN.
-  - `ajustes.blade.php` — Perfil de usuario. JS: `backajustes.js`. Served from `ProfileController@show` which passes `$user` and `$currentPage`.
+  - `ajustes.blade.php` — Hub de ajustes con 2 tabs ("Mi Perfil" | "Configuración"). Tab Perfil: hero con avatar clickable (8 presets + subida foto), form datos personales (nombre, email, teléfono), seguridad (cambiar contraseña). Tab Config: selector moneda (EUR/USD/GBP), selector tema (light/dark/auto), gestión datos (exportar CSV, eliminar cuenta), planes futuros (gamificación, notificaciones), about, cerrar sesión. Modales: avatar picker, password change, delete account. JS: `backajustes.js`. CSS: `backajustes.css`. Served from `ProfileController@show` which passes `$user` and `$currentPage`. Datos iniciales vía `window.__ajustesData`.
 - **Standalone pages** (no layout):
   - `landing.blade.php` — Landing page pública. CSS: `landing.css`. JS: `landing.js`. Carga reviews via API y detecta sesión activa.
   - `setup.blade.php` — Wizard de configuración inicial (4 pasos). JS: `setup.js`. Solo accesible si el usuario no tiene cuentas.
@@ -41,7 +41,6 @@ GET /desktop       → view('desktop', ['currentPage' => 'desktop'])
 GET /misTarjetas   → view('misTarjetas', ['currentPage' => 'misTarjetas'])
 GET /estadisticas  → view('estadisticas', ['currentPage' => 'estadisticas'])
 GET /ajustes       → ProfileController@show (passes $user + currentPage='ajustes')
-PUT /ajustes       → ProfileController@update
 GET /setup         → view('setup') (redirects to /dashboard if user has accounts)
 ```
 All app routes are inside `middleware(['auth', 'verified'])`.
@@ -105,14 +104,14 @@ php artisan tinker                         # REPL
 - **Account** — Bank account with IBAN, balance, color. Has a `spendable_balance` virtual attribute (balance minus envelope allocations).
 - **Movement** — Transaction with types: `gasto` (expense), `ingreso` (income), `traspaso` (transfer). Belongs to an account, optionally to a card and envelope. Has N:M relationship with Tags via `movement_tag` pivot table.
 - **Envelope** — Budget category (envelope method). Has `allocated_amount` and `target_amount`.
-- **Card** — Payment card linked to an account.
+- **Card** — Payment card linked to an account. Optionally stores `card_number` and `security_code` (encrypted at rest via Laravel `encrypted` cast). These fields are in `$hidden` — never returned in normal JSON responses. Use `POST /api/cards/{card}/reveal` with password verification to access them. `has_full_number` and `has_security_code` boolean appends indicate if sensitive data is available.
 - **Tag** — Color-coded labels for categorizing movements.
 
 ## API Structure
 
 All routes in `backend/routes/api.php`. Public routes use `throttle:30,1`, private routes use `web + auth + throttle:60,1` (Sanctum cookie-based auth).
 
-Key endpoints: `/api/accounts`, `/api/movements`, `/api/cards`, `/api/envelopes`, `/api/tags`, `/api/stocks/quote` (Alpha Vantage proxy), `/api/reviews` (public).
+Key endpoints: `/api/accounts`, `/api/movements`, `/api/cards`, `/api/cards/{card}/reveal` (POST — requires password, returns decrypted card_number + security_code), `/api/envelopes`, `/api/tags`, `/api/stocks/quote` (Alpha Vantage proxy), `/api/reviews` (public), `/api/profile` (GET/PUT), `/api/profile/avatar` (POST — preset string or file upload via FormData), `/api/profile/password` (PUT), `/api/profile/currency` (PUT), `/api/profile/export` (GET — CSV download), `/api/profile/account` (DELETE — requires password). `/api/user` returns user with profile loaded.
 
 ProfileController@show returns JSON when `$request->wantsJson()` (API mode) or the Blade view when accessed via browser. Do NOT send `X-Requested-With: XMLHttpRequest` header from pjax-nav.js fetch calls — it would trigger JSON mode instead of HTML.
 
@@ -141,7 +140,7 @@ backend/
                     Standalone: landing.css
     js/
       core/       ← Módulos compartidos cargados en el layout:
-                    formatters.js (auto-formateo inputs: IBAN, phone, digits)
+                    formatters.js (auto-formateo inputs: IBAN, phone, digits, card-number)
                     utils.js (getCookie, escapeHTML, formatDate, formatCurrency, parseExpirationDate, showNotification, loadUserProfile)
                     api-client.js (apiRequest: CSRF automático, 401→redirect, 422→validation errors)
                     theme-toggle.js (toggle tema light/dark/auto, localStorage, FOUC prevention)
@@ -186,6 +185,8 @@ backend/
 
 ## Last Changes Log
 
+- **Número completo de tarjeta y código de seguridad** (2026-03-12): Nuevas columnas `card_number` y `security_code` en tabla `cards` (cifrado con Laravel `encrypted` cast). Campos en `$hidden` — nunca se envían en respuestas JSON normales. `has_full_number` y `has_security_code` como appends booleanos. Nuevo endpoint `POST /api/cards/{card}/reveal` que verifica contraseña antes de devolver datos descifrados. Frontend: modal de creación con campo número completo (auto-formateo cada 4 dígitos via formatters.js `card-number`) y código de seguridad opcionales; auto-fill de últimos 4 dígitos. Panel detalle: campos sensibles enmascarados con botón reveal (ojo) → modal de contraseña → datos visibles + botón copiar al portapapeles. Dark mode para nuevos componentes. Responsive para campos sensibles en móvil.
+- **Rediseño completo "Ajustes"** (2026-03-12): Transformación de página simple de perfil a hub de ajustes con 2 tabs. Tab "Mi Perfil": hero avatar clickable (8 presets Font Awesome con gradientes + subida foto JPG/PNG ≤2MB), form datos personales con email editable, modal cambiar contraseña. Tab "Configuración": selector moneda (EUR/USD/GBP) con guardado inmediato, selector tema (integra theme-toggle.js), exportar CSV, eliminar cuenta con confirmación password, sección planes futuros (gamificación + notificaciones), about v2.2.1, cerrar sesión. Backend: 5 rutas API nuevas (avatar, password, currency, export, delete account), eliminada PUT /ajustes (todo va por API). Avatar storage en `storage/app/public/avatars/`, `storage:link` en docker-entrypoint.sh. Header avatar-aware con soporte preset/foto/initials. utils.js `updateAvatarUI()` acepta user object con profile.avatar. CSS limpiado: eliminados ~600 líneas de código muerto (sessions, export-options legacy). Dark mode completo para nuevos componentes. Ver `borrame.txt` para detalles.
 - **Rediseño completo "Mis Tarjetas"** (2026-03-12): Layout 2-col desktop: carrusel tarjetas (izq) + panel detalle con stats (der). Transacciones full-width independiente debajo. `renderCardDetail(card)` en tarjetas.js: muestra alias, tipo, últimos 4 dígitos, caducidad, cuenta vinculada, y grid 2×2 de stats (saldo, movimientos, gastos, ingresos). Highlight `.selected` en mini-card activa. Dark mode para nuevos componentes. Responsive ≤992px: 1 columna. ≤600px: panel compacto. Ver `borrame.txt` para detalles.
 - **Toggle dark mode + responsive mejorado** (2026-03-11): Toggle manual de tema (light/dark/auto) en header con persistencia localStorage. Migrado app-dark-mode.css de `@media prefers-color-scheme` a `html[data-theme="dark"]`. Script FOUC-prevention en `<head>`. Responsive: card-title/page-title centralizados en app-forms.css, form-row-flex collapse (600px), mini-cards responsive en desktop.css. Rediseño tarjetas móvil (600px): tabla→cards CSS-only, mini-cards swipe, filtros touch-friendly 44px. Limpieza duplicados responsive en desktop.css/tarjetas.css/backajustes.css. Ver `borrame.txt` para detalles.
 - **Mejora estética completa** (2026-03-11): Expandidos design tokens (grises, sombras, radios, transiciones, spacing). Reemplazados ~80 grises hardcodeados → variables CSS en 11 archivos. Cards con acento verde + sombras multinivel. Sidebar pill indicator (Discord). Header glassmorphism translúcido. Botones con :disabled/:focus-visible. Focus-visible global. Dark mode automático (`app-dark-mode.css`). `prefers-reduced-motion` global. Ver `borrame.txt` para detalles.

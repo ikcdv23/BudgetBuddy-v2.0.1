@@ -1,4 +1,156 @@
 ============================================================
+  REDISEÑO COMPLETO "AJUSTES" (2026-03-12)
+============================================================
+
+RESUMEN:
+Transformación de la página simple de perfil a un hub completo de
+ajustes con 2 tabs. Sistema de avatar con presets + foto, edición
+completa de perfil, cambio de contraseña, selector de moneda y tema,
+exportar CSV, eliminar cuenta. Todo vía API (apiRequest).
+
+------------------------------------------------------------
+ARCHIVOS MODIFICADOS:
+------------------------------------------------------------
+1. backend/app/Http/Controllers/ProfileController.php
+   → REESCRITURA: 5 métodos nuevos:
+     - updateAvatar(POST): preset string (preset-1..8) o file upload
+     - updatePassword(PUT): current_password + new_password + confirmed
+     - updateCurrency(PUT): currency in EUR/USD/GBP
+     - exportMovements(GET): StreamedResponse CSV con BOM UTF-8
+     - deleteAccount(DELETE): password confirm → logout → delete
+   → update() ampliado: añadido email con unique validation
+   → Helper: deleteOldAvatarFile() borra foto anterior de storage
+
+2. backend/routes/api.php
+   → 5 rutas nuevas: POST /profile/avatar, PUT /profile/password,
+     PUT /profile/currency, GET /profile/export, DELETE /profile/account
+   → /api/user ahora carga ->load('profile') para incluir avatar
+   → Eliminado POST /logout (no se usaba por API)
+
+3. backend/routes/web.php
+   → Eliminada: PUT /ajustes (migrado a API PUT /api/profile)
+
+4. backend/docker-entrypoint.sh
+   → Añadido: php artisan storage:link --force (para avatares subidos)
+
+5. backend/resources/views/ajustes.blade.php
+   → REESCRITURA COMPLETA: de ~150 líneas (perfil simple) a ~240 líneas
+   → Datos iniciales via window.__ajustesData (avatar, currency, name, etc.)
+   → Tab bar: "Mi Perfil" | "Configuración"
+   → Tab Perfil: hero avatar clickable + form + seguridad
+   → Tab Config: moneda, tema, datos, planes futuros, about, logout
+   → 3 modales: avatar picker, password change, delete account
+   → Avatar modal: grid 8 presets + upload zone + preview
+
+6. backend/resources/views/components/app-header.blade.php
+   → Avatar-aware: 3 estados (preset/foto/initials)
+   → Preset: div.avatar-preset con data-preset
+   → Foto: div.avatar-photo con <img> de storage
+   → Default: initials como antes
+
+7. backend/public/js/backajustes.js
+   → REESCRITURA COMPLETA: de ~70 líneas a ~420 líneas
+   → IIFE con DOMContentLoaded
+   → AVATAR_PRESETS: 8 presets con icon, gradient, label
+   → Secciones: tabs, avatar (preset+upload+drag&drop), profile form,
+     password modal, currency selector, theme selector, export CSV,
+     delete account, logout, modal helpers
+   → uploadAvatarFile(): fetch manual con FormData (no apiRequest)
+   → renderHeroAvatar(): preset (icono+gradiente), foto (img), initials
+   → updateHeaderAvatar(): actualiza .user-avatar-top en tiempo real
+   → Theme selector integra con localStorage('bb-theme')
+
+8. backend/public/js/core/utils.js
+   → HEADER_AVATAR_PRESETS: mapa de 8 presets (icon+gradient)
+   → loadUserProfile(): ahora pasa user object (no solo name) a updateAvatarUI
+   → updateAvatarUI(): REESCRITA — acepta string (legacy) u objeto user
+     Renderiza: preset (icono+gradiente), foto (img src), initials (fallback)
+   → /api/user ahora devuelve profile.avatar → avatar se renderiza al cargar
+
+9. backend/public/css/backajustes.css
+   → REESCRITURA MAYOR: de ~1400 líneas a ~600 líneas
+   → ELIMINADO (código muerto): .sessions-list y derivados (~225 líneas),
+     .export-options/.export-option/.export-preview/.export-progress (~160 líneas),
+     .btn-primary/.btn-secondary duplicados (~30 líneas)
+   → CONSERVADO: .modal system, .form-row, .form-group, .currency-option
+   → NUEVO: .settings-tabs, .settings-tab, .tab-content, .profile-hero,
+     .profile-avatar-hero, .avatar-edit-overlay, .avatar-preset-grid,
+     .avatar-preset-option, .avatar-divider, .avatar-upload-zone,
+     .avatar-upload-preview, .theme-selector, .theme-option,
+     .future-plans-list, .future-plan-item, .about-info, .phone-input-row
+
+10. backend/public/css/app-dark-mode.css
+    → Sección AJUSTES PAGE reescrita:
+      - ELIMINADO: .profile-avatar-large, .toggle-label, .export-option,
+        .export-preview, .session-item, .session-action-btn
+      - NUEVO: .settings-tabs, .settings-tab, .profile-hero, .avatar-content,
+        .avatar-edit-overlay, .avatar-preset-option, .avatar-upload-zone,
+        .avatar-divider, .theme-option, .future-plan-item, .future-plan-badge
+
+11. CLAUDE.md
+    → Actualizada descripción de ajustes.blade.php
+    → Eliminada PUT /ajustes de Key Routes
+    → Añadidas nuevas rutas API en API Structure
+    → Añadida entrada en Last Changes Log
+
+------------------------------------------------------------
+AVATAR PRESETS (8 opciones):
+------------------------------------------------------------
+| ID       | Icono             | Colores              |
+|----------|-------------------|----------------------|
+| preset-1 | fa-graduation-cap | #3b82f6 → #1d4ed8   |
+| preset-2 | fa-piggy-bank     | #ec4899 → #be185d   |
+| preset-3 | fa-chart-line     | #10b981 → #047857   |
+| preset-4 | fa-rocket         | #8b5cf6 → #6d28d9   |
+| preset-5 | fa-lightbulb      | #f59e0b → #d97706   |
+| preset-6 | fa-star           | #f97316 → #ea580c   |
+| preset-7 | fa-bullseye       | #14b8a6 → #0d9488   |
+| preset-8 | fa-flask          | #6366f1 → #4338ca   |
+
+------------------------------------------------------------
+LAYOUT RESULTADO:
+------------------------------------------------------------
+┌──────────────────────────────────────────────┐
+│  [ Mi Perfil ] [ Configuración ]              │
+├──────────────────────────────────────────────┤
+│ TAB 1:                                        │
+│  ┌─────────────────────────────────┐          │
+│  │     (Avatar 120px clickable)    │          │
+│  │       Juan García               │          │
+│  │       juan@email.com            │          │
+│  └─────────────────────────────────┘          │
+│  ┌ Datos personales ────────────────┐         │
+│  │ Nombre: [____] Apellido: [____]  │         │
+│  │ Email: [____________________]    │         │
+│  │ Teléfono: [+34] [612 345 678]   │         │
+│  │                    [Guardar]     │         │
+│  └──────────────────────────────────┘         │
+│  ┌ Seguridad ───────────────────────┐         │
+│  │ Cambiar contraseña    [Cambiar]  │         │
+│  └──────────────────────────────────┘         │
+├──────────────────────────────────────────────┤
+│ TAB 2:                                        │
+│  ┌ Moneda ──────────────────────────┐         │
+│  │ [€ Euro ✓] [$ Dólar] [£ Libra]  │         │
+│  └──────────────────────────────────┘         │
+│  ┌ Tema ────────────────────────────┐         │
+│  │ [☀ Claro] [☾ Oscuro] [◐ Auto]   │         │
+│  └──────────────────────────────────┘         │
+│  ┌ Datos ───────────────────────────┐         │
+│  │ Exportar movimientos  [Exportar] │         │
+│  │ ⚠ Eliminar cuenta    [Eliminar] │         │
+│  └──────────────────────────────────┘         │
+│  ┌ Próximamente ────────────────────┐         │
+│  │ 🏆 Gamificación    Próximamente  │         │
+│  │ 🔔 Notificaciones  Próximamente  │         │
+│  └──────────────────────────────────┘         │
+│  ┌ Acerca de ───────────────────────┐         │
+│  │ BudgetBuddy v2.2.1              │         │
+│  └──────────────────────────────────┘         │
+│  [Cerrar sesión]                              │
+└──────────────────────────────────────────────┘
+
+============================================================
   REDISEÑO COMPLETO "MIS TARJETAS" (2026-03-12)
 ============================================================
 

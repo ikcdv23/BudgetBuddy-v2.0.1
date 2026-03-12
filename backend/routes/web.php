@@ -44,7 +44,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Perfil / Ajustes
     Route::get('/ajustes', [ProfileController::class, 'show'])->name('profile.view');
-    Route::put('/ajustes', [ProfileController::class, 'update'])->name('profile.update');
 });
 
 require __DIR__ . '/auth.php';

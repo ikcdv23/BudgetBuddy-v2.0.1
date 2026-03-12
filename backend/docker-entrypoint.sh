@@ -52,6 +52,9 @@ done
 echo "🚀 Ejecutando migraciones..."
 php artisan migrate --force
 
+# 5.5. Crear symlink storage (para avatares subidos)
+php artisan storage:link --force 2>/dev/null || true
+
 # 6. Arrancar el servidor de Laravel
 echo "🏁 Iniciando servidor..."
 php artisan serve --host=0.0.0.0 --port=8000

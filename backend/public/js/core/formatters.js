@@ -68,11 +68,27 @@
         input.dataset.rawValue = input.value;
     }
 
+    // ── Número de tarjeta (hasta 19 dígitos → XXXX XXXX XXXX XXXX XXX) ──
+    function handleCardNumber(e) {
+        const input = e.target;
+        const digits = input.value.replace(/\D/g, '').substring(0, 19);
+        const formatted = digits.match(/.{1,4}/g)?.join(' ') || '';
+        input.value = formatted;
+        input.dataset.rawValue = digits;
+
+        if (digits.length >= 13) {
+            input.style.borderColor = '#10b981';
+        } else if (digits.length > 0) {
+            input.style.borderColor = '';
+        }
+    }
+
     // ── Mapa de formateadores ────────────────────────────────
     var handlers = {
         iban: handleIBAN,
         phone: handlePhone,
         digits: handleDigitsOnly,
+        'card-number': handleCardNumber,
     };
 
     // ── Inicialización automática ────────────────────────────
