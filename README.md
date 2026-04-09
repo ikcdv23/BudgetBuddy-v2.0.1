@@ -56,7 +56,7 @@ BudgetBuddy es una aplicación web de gestión financiera diseñada para estudia
 ## Instalacion rapida
 
 ```bash
-git clone https://github.com/anna3589/RETO-02-BudgetBuddy.git
+git clone https://github.com/ikcdv23/BudgetBuddy-v2.0.1.git
 cd RETO-02-BudgetBuddy
 
 # Configurar credenciales MySQL
