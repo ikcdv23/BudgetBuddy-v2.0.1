@@ -29,11 +29,24 @@
             </div>
         </div>
 
-        <div class="cards-section-wrapper">
-            <div id="cards-container" class="dashboard-cards-grid">
+        <div class="cards-section-wrapper carousel-wrapper">
+            <button class="carousel-arrow left hidden" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+            <div id="cards-container" class="dashboard-cards-grid" data-carousel-track>
                 <div style="width: 100%; text-align: center; padding: 30px; color: #9ca3af;">
                     <i class="fas fa-spinner fa-spin"></i> Cargando tarjetas...
                 </div>
+            </div>
+            <button class="carousel-arrow right hidden" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <div class="card-actions-row">
+            <button class="card-action-box add-action" id="addCardActionBtn" aria-label="Añadir nueva tarjeta">
+                <div class="card-action-icon add"><i class="fas fa-plus"></i></div>
+                <span>Nueva tarjeta</span>
+            </button>
+            <div class="card-action-box delete-action" id="deleteCardZone" aria-label="Zona de eliminación">
+                <div class="card-action-icon delete"><i class="fas fa-trash"></i></div>
+                <span>Arrastrar aquí para eliminar</span>
             </div>
         </div>
     </div>
@@ -88,86 +101,7 @@
     </div>
 </div>
 
-<!-- Modal Nueva Tarjeta -->
-<dialog id="cardModal" class="tag-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3><i class="fas fa-credit-card"></i> Nueva Tarjeta</h3>
-            <button class="close-modal" id="closeCardModal">&times;</button>
-        </div>
-
-        <form id="createCardForm" class="modal-body">
-            <div class="form-group">
-                <label for="card-account-select">Cuenta Vinculada</label>
-                <div class="select-wrapper">
-                    <select id="card-account-select" class="account-dropdown" style="padding: 8px 10px; font-size: 14px">
-                        <option value="">Cargando cuentas...</option>
-                    </select>
-                    <i class="fas fa-chevron-down select-icon-overlay"></i>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="card-alias">Alias de la tarjeta</label>
-                <input type="text" id="card-alias" placeholder="Ej: Para Viajes" required maxlength="20" />
-            </div>
-
-            <div class="form-group">
-                <label>Tipo de Tarjeta</label>
-                <div class="card-type-selector">
-                    <label class="type-option">
-                        <input type="radio" name="card_type" value="debit" checked />
-                        <div class="type-content visa-style">
-                            <i class="fab fa-cc-visa"></i>
-                            <span>Visa (Débito)</span>
-                        </div>
-                    </label>
-                    <label class="type-option">
-                        <input type="radio" name="card_type" value="credit" />
-                        <div class="type-content master-style">
-                            <i class="fab fa-cc-mastercard"></i>
-                            <span>Mastercard (Crédito)</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="card-full-number">Numero de tarjeta</label>
-                <input type="text" id="card-full-number"
-                       placeholder="1234 5678 9012 3456" maxlength="23"
-                       inputmode="numeric" data-format="card-number"
-                       autocomplete="off" required />
-                <span class="form-hint">Los ultimos 4 digitos se rellenan automaticamente</span>
-            </div>
-
-            <div class="form-row-flex">
-                <div class="form-group flex-1">
-                    <label for="card-digits">Ultimos 4 digitos</label>
-                    <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" readonly />
-                </div>
-                <div class="form-group flex-1">
-                    <label for="card-security-code">CVC</label>
-                    <input type="password" id="card-security-code"
-                           placeholder="&bull;&bull;&bull;" maxlength="3"
-                           inputmode="numeric" data-format="digits"
-                           autocomplete="off" required />
-                    <span class="form-hint">3 digitos del reverso de la tarjeta</span>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="card-exp">Caducidad</label>
-                <input type="month" id="card-exp" required />
-            </div>
-        </form>
-
-        <div class="modal-footer">
-            <button class="btn-secondary" id="cancelCardBtn">Cancelar</button>
-            <button class="btn-primary" id="saveCardBtn">Guardar Tarjeta</button>
-        </div>
-    </div>
-</dialog>
+@include('components.card-modal')
 
 <!-- Modal Nuevo Movimiento -->
 <dialog id="movementModal" class="tag-modal">

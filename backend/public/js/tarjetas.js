@@ -48,11 +48,11 @@
         transactionsBody: document.getElementById('transactions-body'),
         filterButtons: document.querySelectorAll('.filter-btn'),
         createMovementBtn: document.getElementById('createMovementBtn'),
-        cardModal: document.getElementById('cardModal'),
-        closeCardModal: document.getElementById('closeCardModal'),
-        cancelCardBtn: document.getElementById('cancelCardBtn'),
-        saveCardBtn: document.getElementById('saveCardBtn'),
-        createCardForm: document.getElementById('createCardForm'),
+        cardModal: document.getElementById('card-modal'),
+        closeCardModal: document.getElementById('close-card-modal-btn'),
+        cancelCardBtn: document.getElementById('cancel-card-btn'),
+        saveCardBtn: document.getElementById('save-card-btn'),
+        createCardForm: document.getElementById('create-card-form'),
         movementModal: document.getElementById('movementModal'),
         closeMovementModal: document.getElementById('closeMovementModal'),
         cancelMovementBtn: document.getElementById('cancelMovementBtn'),
@@ -442,48 +442,11 @@
             dom.cardsContainer.appendChild(cardEl);
         });
 
-        // Tarjeta fantasma (añadir nueva)
-        const ghostCard = document.createElement('div');
-        ghostCard.className = 'mini-card ghost-card';
-        ghostCard.innerHTML = `
-            <div class="ghost-content">
-                <div class="ghost-icon">
-                    <i class="fas fa-plus"></i>
-                </div>
-                <span style="font-size: 0.9rem; font-weight: 500;">Nueva Tarjeta</span>
-            </div>
-        `;
-        ghostCard.addEventListener('click', openCardModal);
-        dom.cardsContainer.appendChild(ghostCard);
-
-        // Zona de eliminación
-        createDeleteZone();
-
-        // Scroll horizontal
-        initializeHorizontalScroll();
+        // Las acciones (añadir / eliminar) están en .card-actions-row (Blade estático)
+        // Scroll horizontal gestionado por carousel-nav.js + flechas
     }
 
-    function createDeleteZone() {
-        const oldZone = document.getElementById('deleteCardZone');
-        if (oldZone) oldZone.remove();
-
-        const deleteZone = document.createElement('div');
-        deleteZone.className = 'delete-card-zone';
-        deleteZone.id = 'deleteCardZone';
-        deleteZone.innerHTML = `
-            <div class="delete-card-icon">
-                <i class="fas fa-trash"></i>
-            </div>
-            <div class="delete-card-text">
-                <h4>Eliminar tarjeta</h4>
-                <p>Arrastra aquí para eliminar</p>
-            </div>
-        `;
-
-        if (dom.cardsContainer) {
-            dom.cardsContainer.appendChild(deleteZone);
-        }
-    }
+    // Delete zone es estática en el Blade (#deleteCardZone)
 
     function renderTagDropdown() {
         if (!dom.movementCategorySelect) return;
@@ -690,55 +653,15 @@
         });
     }
 
-    function initializeHorizontalScroll() {
-        const container = dom.cardsContainer;
-        if (!container) return;
-
-        container.style.overflowX = 'auto';
-        container.style.overflowY = 'hidden';
-        container.style.cursor = 'grab';
-
-        let isDragging = false;
-        let startX;
-        let scrollLeft;
-
-        container.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            container.style.cursor = 'grabbing';
-            startX = e.pageX - container.offsetLeft;
-            scrollLeft = container.scrollLeft;
-        });
-
-        container.addEventListener('mouseleave', () => {
-            isDragging = false;
-            container.style.cursor = 'grab';
-        });
-
-        container.addEventListener('mouseup', () => {
-            isDragging = false;
-            container.style.cursor = 'grab';
-        });
-
-        container.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const x = e.pageX - container.offsetLeft;
-            const walk = (x - startX) * 2;
-            container.scrollLeft = scrollLeft - walk;
-        });
-
-        container.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            container.scrollLeft += e.deltaY;
-        }, { passive: false });
-    }
+    // initializeHorizontalScroll eliminado — la navegación la gestionan
+    // las flechas del carrusel (carousel-nav.js) y el scroll táctil nativo.
 
     // ==========================================
     // 7. DRAG & DROP (usa modules/drag-drop.js)
     // ==========================================
     function initializeDragAndDrop() {
         window.initDragAndDrop({
-            items: '.mini-card:not(.ghost-card)',
+            items: '.mini-card',
             dropZone: '#deleteCardZone',
             dataAttr: 'data-card-id',
             onDrop: async function (id) {
@@ -964,6 +887,12 @@
         dom.createMovementBtn.addEventListener('click', openMovementModal);
     }
 
+    // Botón "Nueva tarjeta" debajo del carrusel
+    const addCardActionBtn = document.getElementById('addCardActionBtn');
+    if (addCardActionBtn) {
+        addCardActionBtn.addEventListener('click', openCardModal);
+    }
+
     if (dom.closeCardModal) {
         dom.closeCardModal.addEventListener('click', () => {
             if (dom.cardModal) dom.cardModal.close();
@@ -993,15 +922,15 @@
                 return;
             }
 
-            // Validar número completo si se proporcionó
-            if (fullNumberRaw && (fullNumberRaw.length < 13 || fullNumberRaw.length > 19)) {
-                showNotification('El numero de tarjeta debe tener entre 13 y 19 digitos', 'error');
+            // Validar número completo (obligatorio, exactamente 16 dígitos)
+            if (fullNumberRaw.length !== 16) {
+                showNotification('El número de tarjeta debe tener exactamente 16 dígitos', 'error');
                 return;
             }
 
-            // Validar código de seguridad si se proporcionó
-            if (securityCode && (securityCode.length < 3 || securityCode.length > 7)) {
-                showNotification('El codigo de seguridad debe tener entre 3 y 7 digitos', 'error');
+            // Validar código de seguridad (obligatorio, exactamente 3 dígitos)
+            if (securityCode.length !== 3) {
+                showNotification('El CVC debe tener exactamente 3 dígitos', 'error');
                 return;
             }
 
@@ -1250,8 +1179,6 @@
         if (failed.length > 0) {
             console.error('Some loads failed:', failed);
             showNotification('Algunos datos no se pudieron cargar', 'error');
-        } else {
-            showNotification('Sistema cargado correctamente', 'success');
         }
 
         // Render detail panel for the first selected card

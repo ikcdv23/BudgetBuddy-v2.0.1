@@ -125,6 +125,9 @@
             // 9. Cargar scripts de la nueva página
             await loadPageScripts(newScripts);
 
+            // 9b. Re-inicializar módulos compartidos tras swap
+            if (window.initCarousels) window.initCarousels();
+
             // 10. Actualizar URL en el navegador
             if (pushState) {
                 history.pushState({pjax: true}, '', url);

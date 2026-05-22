@@ -63,7 +63,7 @@
                                 <option value="+44">+44</option>
                                 <option value="+1">+1</option>
                             </select>
-                            <input type="tel" id="setup_phone" placeholder="612 345 678" data-format="phone" maxlength="11" inputmode="numeric" style="border-radius: 0 8px 8px 0;" />
+                            <input type="tel" id="setup_phone" placeholder="612 345 678" data-format="phone" data-country-select="setup_phone_country" maxlength="15" inputmode="numeric" style="border-radius: 0 8px 8px 0;" />
                         </div>
                     </div>
 
@@ -97,9 +97,9 @@
                                 <option value="PT">PT</option>
                                 <option value="GB">GB</option>
                             </select>
-                            <input type="text" id="iban_number" placeholder="0000 0000 00..." data-format="iban" maxlength="27" inputmode="numeric" style="padding-inline-start: 10px !important; border-inline-start: none; border-start-start-radius: 0; border-end-start-radius: 0;" />
+                            <input type="text" id="iban_number" placeholder="0000 0000 00..." data-format="iban" data-country-select="iban_country" data-iban-hint="iban-hint" maxlength="31" inputmode="numeric" style="padding-inline-start: 10px !important; border-inline-start: none; border-start-start-radius: 0; border-end-start-radius: 0;" />
                         </div>
-                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px">Selecciona el país y escribe los dígitos.</p>
+                        <p id="iban-hint" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px">Solo los 22 dígitos restantes (0/22)</p>
                     </div>
 
                     <div class="form-group">
@@ -161,10 +161,21 @@
                             </div>
                         </div>
 
+                        <div class="form-group">
+                            <label>Número de tarjeta</label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-credit-card"></i>
+                                <input type="text" id="card_number" placeholder="1234 5678 9012 3456" data-format="card-number" maxlength="19" inputmode="numeric" />
+                            </div>
+                        </div>
+
                         <div class="form-row-flex">
                             <div class="form-group flex-1">
-                                <label>Últimos 4</label>
-                                <input type="text" id="card_digits" maxlength="4" placeholder="1234" data-format="digits" inputmode="numeric" />
+                                <label>CVC</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-lock"></i>
+                                    <input type="text" id="card_cvc" maxlength="3" placeholder="123" data-format="digits" inputmode="numeric" />
+                                </div>
                             </div>
                             <div class="form-group flex-1">
                                 <label for="card-exp">Caducidad</label>

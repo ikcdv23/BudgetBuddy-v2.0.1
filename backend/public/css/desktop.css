@@ -404,34 +404,14 @@
     scrollbar-width: none;
 }
 
-/* ESTILO DE BARRA DE SCROLL FINA */
+/* Ocultar scrollbar (se navega con flechas del carrusel) */
 .dashboard-cards-grid {
-    scrollbar-width: thin;
-    /* Para Firefox */
+    scrollbar-width: none;
     padding-bottom: 10px;
-    /* Un poco más de sitio para la barra */
 }
 
 .dashboard-cards-grid::-webkit-scrollbar {
-    height: 6px;
-    /* Altura de la barra horizontal */
-    display: block;
-    /* Asegura que se muestre */
-}
-
-.dashboard-cards-grid::-webkit-scrollbar-track {
-    background: transparent;
-    /* Fondo transparente */
-}
-
-.dashboard-cards-grid::-webkit-scrollbar-thumb {
-    background-color: var(--gray-300);
-    border-radius: 10px;
-    /* Bordes redondos */
-}
-
-.dashboard-cards-grid::-webkit-scrollbar-thumb:hover {
-    background-color: var(--gray-400);
+    display: none;
 }
 
 /* LA TARJETA INDIVIDUAL (El coche en la pista) */

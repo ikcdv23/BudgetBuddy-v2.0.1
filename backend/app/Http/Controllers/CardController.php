@@ -43,7 +43,7 @@ class CardController extends Controller
                 'alias'           => 'required|string|max:50',
                 'expiration_date' => 'required|date|after_or_equal:today',
                 'type'            => 'required|in:credit,debit',
-                'card_number'     => 'required|string|min:13|max:19|regex:/^\d+$/',
+                'card_number'     => 'required|string|size:16|regex:/^\d+$/',
                 'security_code'   => 'required|string|size:3|regex:/^\d+$/',
                 'last_4_digits'   => 'nullable|string|size:4',
             ];

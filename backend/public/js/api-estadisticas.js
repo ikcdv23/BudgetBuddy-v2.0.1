@@ -37,8 +37,7 @@ let currentTimeframe = "1D";
 // 2. INICIALIZACIÓN
 // ==========================================
 (async function initEstadisticas() {
-    console.log("🚀 Iniciando sistema híbrido: APIs + Gráficos...");
-
+    console.log("Iniciando sistema híbrido: APIs + Gráficos...");
     // 1. Inicializar Gráficos (Estáticos por diseño)
     createAllCharts();
     setupTimeButtons();
@@ -48,43 +47,7 @@ let currentTimeframe = "1D";
 })();
 
 // ==========================================
-// 3. API METEOROLÓGICA (Open-Meteo)
-// ==========================================
-async function cargarTiempolrun() {
-    try {
-        const url = "https://api.open-meteo.com/v1/forecast?latitude=43.3390&longitude=-1.7894&current=temperature_2m,weather_code&timezone=Europe%2FMadrid";
-        const res = await fetch(url);
-        const data = await res.json();
-
-        // Creamos el widget dinámicamente si no existe
-        const contenedorPadre = document.querySelector(".desktop-header-right");
-        if (contenedorPadre) {
-            let widget = document.getElementById("weather-widget-container");
-            if (!widget) {
-                widget = document.createElement("div");
-                widget.id = "weather-widget-container";
-                widget.style.cssText = "display:flex; gap:8px; align-items:center; background:rgba(255,255,255,0.5); padding:5px 15px; border-radius:20px; font-weight:500; margin-right:10px;";
-                contenedorPadre.insertBefore(widget, contenedorPadre.firstChild);
-            }
-            
-            const temp = parseFloat(data.current.temperature_2m) || 0;
-            const icono = data.current.weather_code <= 3 ? 'fa-sun' : 'fa-cloud';
-            widget.textContent = '';
-            const icon = document.createElement('i');
-            icon.className = `fas ${icono}`;
-            const span = document.createElement('span');
-            span.textContent = `${temp}°C Irun`;
-            widget.appendChild(icon);
-            widget.appendChild(document.createTextNode(' '));
-            widget.appendChild(span);
-        }
-    } catch (e) {
-        console.error("Error al cargar el clima", e);
-    }
-}
-
-// ==========================================
-// 4. API FINANCIERA (Alpha Vantage + Fallback)
+// 3. API FINANCIERA (Alpha Vantage + Fallback)
 // ==========================================
 async function actualizarPreciosHibrido() {
     const ids = Object.keys(simbolosAPI);

@@ -185,10 +185,12 @@ document.addEventListener("DOMContentLoaded", async function () {
 
             try {
                 const country = document.getElementById("iban_country").value;
-                const numberRaw = document.getElementById("iban_number").value.replace(/\s+/g, '');
+                const ibanInput = document.getElementById("iban_number");
+                const numberRaw = (ibanInput.dataset.rawValue || ibanInput.value).replace(/\s+/g, '');
 
-                if (numberRaw.length !== 22) {
-                    throw new Error("El IBAN debe tener 24 caracteres (ES + 22 dígitos).");
+                var expectedIbanLen = (window.IBAN_LENGTHS && window.IBAN_LENGTHS[country]) || 22;
+                if (numberRaw.length !== expectedIbanLen) {
+                    throw new Error("El IBAN para " + country + " debe tener " + expectedIbanLen + " dígitos (" + numberRaw.length + " introducidos).");
                 }
 
                 // Crear CUENTA
@@ -212,13 +214,24 @@ document.addEventListener("DOMContentLoaded", async function () {
                         return;
                     }
 
+                    const cardNumberInput = document.getElementById("card_number");
+                    const cardNumber = (cardNumberInput.dataset.rawValue || cardNumberInput.value).replace(/\s+/g, '');
+                    const cvc = document.getElementById("card_cvc").value.trim();
+
+                    if (!cardNumber || cardNumber.length !== 16) {
+                        throw new Error("El número de tarjeta debe tener exactamente 16 dígitos.");
+                    }
+                    if (!cvc || cvc.length !== 3) {
+                        throw new Error("El CVC debe tener exactamente 3 dígitos.");
+                    }
+
                     await apiRequest("/api/cards", "POST", {
                         account_id: accountId,
                         alias: document.getElementById("card_alias").value,
                         type: typeRadio ? typeRadio.value : "debit",
-                        last_4_digits: document.getElementById("card_digits").value,
+                        card_number: cardNumber,
+                        security_code: cvc,
                         expiration_date: expDate,
-                        balance: 0,
                     });
                 }
 

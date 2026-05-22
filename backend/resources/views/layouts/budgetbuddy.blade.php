@@ -55,6 +55,7 @@
     <script src="{{ asset('js/core/theme-toggle.js') }}"></script>
     <script src="{{ asset('js/core/notifications.js') }}"></script>
     <script src="{{ asset('js/modules/drag-drop.js') }}"></script>
+    <script src="{{ asset('js/modules/carousel-nav.js') }}"></script>
     @stack('scripts')
     <script src="{{ asset('js/pjax-nav.js') }}"></script>
 </body>

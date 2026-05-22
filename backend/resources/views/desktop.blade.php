@@ -98,10 +98,10 @@
                                         <option value="IT">IT</option>
                                         <option value="PT">PT</option>
                                     </select>
-                                    <input type="text" id="acc-iban" name="iban_number" placeholder="0000 0000 00..." required aria-required="true" data-format="iban" maxlength="27" inputmode="numeric" class="iban-number-input" />
+                                    <input type="text" id="acc-iban" name="iban_number" placeholder="0000 0000 00..." required aria-required="true" data-format="iban" data-country-select="acc-iban-country" data-iban-hint="iban-help" maxlength="31" inputmode="numeric" class="iban-number-input" />
                                 </div>
                                 <p id="iban-help" class="form-hint-text">
-                                    Solo los 22 dígitos restantes.
+                                    Solo los 22 dígitos restantes (0/22)
                                 </p>
                             </div>
 
@@ -199,76 +199,19 @@
                 </a>
             </div>
 
-            <div id="dashboard-cards-container" class="dashboard-cards-grid">
-                <div style="width: 100%; text-align: center; padding: 30px; color: #9ca3af;">
-                    <i class="fas fa-spinner fa-spin"></i> Cargando tarjetas...
+            <div class="carousel-wrapper">
+                <button class="carousel-arrow left hidden" aria-label="Anterior"><i class="fas fa-chevron-left"></i></button>
+                <div id="dashboard-cards-container" class="dashboard-cards-grid" data-carousel-track>
+                    <div style="width: 100%; text-align: center; padding: 30px; color: #9ca3af;">
+                        <i class="fas fa-spinner fa-spin"></i> Cargando tarjetas...
+                    </div>
                 </div>
+                <button class="carousel-arrow right hidden" aria-label="Siguiente"><i class="fas fa-chevron-right"></i></button>
             </div>
         </div>
     </section>
 
-    <dialog id="card-modal" class="tag-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-credit-card"></i> Nueva Tarjeta</h3>
-                <button class="close-modal" id="close-card-modal-btn">&times;</button>
-            </div>
-
-            <form id="create-card-form" class="modal-body">
-                <div class="form-group">
-                    <label for="card-account-select">Cuenta Vinculada</label>
-                    <div class="select-wrapper">
-                        <select id="card-account-select" class="account-dropdown" style="padding: 8px 10px; font-size: 14px"></select>
-                        <i class="fas fa-chevron-down select-icon-overlay"></i>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="card-alias">Alias de la tarjeta</label>
-                    <input type="text" id="card-alias" placeholder="Ej: Para Viajes" required maxlength="20" />
-                </div>
-
-                <div class="form-group">
-                    <span id="card-type-label" class="form-label-bold">Tipo de Tarjeta</span>
-                    <div class="card-type-selector" role="radiogroup" aria-labelledby="card-type-label">
-                        <label class="type-option">
-                            <input type="radio" name="card_type" value="debit" checked aria-label="Visa Débito" />
-                            <div class="type-content visa-style">
-                                <i class="fab fa-cc-visa" aria-hidden="true"></i>
-                                <span>Visa (Débito)</span>
-                            </div>
-                        </label>
-                        <label class="type-option">
-                            <input type="radio" name="card_type" value="credit" aria-label="Mastercard Crédito" />
-                            <div class="type-content master-style">
-                                <i class="fab fa-cc-mastercard" aria-hidden="true"></i>
-                                <span>Mastercard (Crédito)</span>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-row-flex">
-                    <div class="form-group flex-1">
-                        <label for="card-digits">Últimos 4 dígitos</label>
-                        <input type="text" id="card-digits" placeholder="1234" maxlength="4" pattern="\d{4}" required data-format="digits" inputmode="numeric" style="letter-spacing: 2px; text-align: center" />
-                    </div>
-                    <div class="form-group flex-1">
-                        <label for="card-exp">Caducidad</label>
-                        <input type="month" id="card-exp" required />
-                        <span class="form-hint-text">
-                            Ej: 12/2028 o usa el calendario
-                        </span>
-                    </div>
-                </div>
-            </form>
-
-            <div class="modal-footer">
-                <button class="btn-secondary" id="cancel-card-btn">Cancelar</button>
-                <button class="btn-primary" id="save-card-btn">Guardar Tarjeta</button>
-            </div>
-        </div>
-    </dialog>
+    @include('components.card-modal')
 
     <!-- Etiquetas y Metas Financieras -->
     <section class="desktop-right-column">

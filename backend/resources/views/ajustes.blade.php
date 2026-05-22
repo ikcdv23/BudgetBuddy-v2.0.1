@@ -79,7 +79,7 @@
                         <option value="+44" {{ $cc === '+44' ? 'selected' : '' }}>+44</option>
                         <option value="+1" {{ $cc === '+1' ? 'selected' : '' }}>+1</option>
                     </select>
-                    <input type="tel" id="phone" value="{{ $user->profile?->phone ?? '' }}" data-format="phone" maxlength="11" inputmode="numeric" placeholder="612 345 678">
+                    <input type="tel" id="phone" value="{{ $user->profile?->phone ?? '' }}" data-format="phone" data-country-select="phone_country_code" maxlength="15" inputmode="numeric" placeholder="612 345 678">
                 </div>
             </div>
             <div class="form-actions">

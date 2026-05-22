@@ -417,18 +417,7 @@ function renderCards(container, cards) {
 
 	container.appendChild(ghostCard);
 }
-// Convertir scroll vertical del ratón en horizontal para las tarjetas
-const cardsContainer = document.getElementById("dashboard-cards-container");
-
-if (cardsContainer) {
-	cardsContainer.addEventListener("wheel", (evt) => {
-		// Si el usuario hace scroll vertical
-		if (evt.deltaY !== 0) {
-			evt.preventDefault(); // Evita que baje la página
-			cardsContainer.scrollLeft += evt.deltaY; // Mueve las tarjetas
-		}
-	});
-}
+// Scroll horizontal de tarjetas gestionado por carousel-nav.js + flechas
 /**
  * Elegir icono según el nombre del banco
  */
@@ -477,6 +466,22 @@ const closeCardModalBtn = document.getElementById("close-card-modal-btn");
 const cancelCardBtn = document.getElementById("cancel-card-btn");
 const saveCardBtn = document.getElementById("save-card-btn");
 const cardAccountSelect = document.getElementById("card-account-select");
+
+// Auto-rellenar últimos 4 dígitos desde número completo
+const desktopCardFullNumber = document.getElementById("card-full-number");
+const desktopCardDigits = document.getElementById("card-digits");
+if (desktopCardFullNumber && desktopCardDigits) {
+	desktopCardFullNumber.addEventListener('input', function () {
+		const raw = this.dataset.rawValue || this.value.replace(/\D/g, '');
+		if (raw.length >= 4) {
+			desktopCardDigits.value = raw.slice(-4);
+			desktopCardDigits.dataset.rawValue = raw.slice(-4);
+		} else {
+			desktopCardDigits.value = '';
+			desktopCardDigits.dataset.rawValue = '';
+		}
+	});
+}
 
 // Cerrar modal
 if (closeCardModalBtn)
@@ -527,37 +532,42 @@ if (saveCardBtn) {
 		// Recoger datos
 		const accountId = cardAccountSelect.value;
 		const alias = document.getElementById("card-alias").value;
-		const digits = document.getElementById("card-digits").value;
-		const expInput = document.getElementById("card-exp").value; // "2028-12"
+		const expInput = document.getElementById("card-exp").value;
 		const typeRadio = document.querySelector('input[name="card_type"]:checked');
 
-		// Validaciones básicas
-		if (!alias || !digits || !expInput || digits.length !== 4) {
-			showNotification(
-				"Por favor, rellena todos los datos correctamente",
-				"error",
-			);
+		const cardFullNumberEl = document.getElementById("card-full-number");
+		const cardNumberRaw = cardFullNumberEl ? (cardFullNumberEl.dataset.rawValue || cardFullNumberEl.value.replace(/\D/g, '')) : '';
+		const securityCode = document.getElementById("card-security-code") ? document.getElementById("card-security-code").value.replace(/\D/g, '') : '';
+
+		// Validaciones
+		if (!alias || !expInput) {
+			showNotification("Por favor, rellena todos los datos correctamente", "error");
 			return;
 		}
-		let expDate = "";
 
-		// Caso A: Formato nativo del calendario (Chrome) -> YYYY-MM
+		if (cardNumberRaw.length !== 16) {
+			showNotification("El número de tarjeta debe tener exactamente 16 dígitos", "error");
+			return;
+		}
+
+		if (securityCode.length !== 3) {
+			showNotification("El CVC debe tener exactamente 3 dígitos", "error");
+			return;
+		}
+
+		let expDate = "";
 		if (/^\d{4}-\d{2}$/.test(expInput)) {
 			expDate = expInput + "-01";
-		}
-		// Caso B: El usuario lo escribió a mano (Firefox) -> MM/YYYY o MM/YY
-		else if (/^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/.test(expInput)) {
+		} else if (/^(0[1-9]|1[0-2])\/(\d{2}|\d{4})$/.test(expInput)) {
 			let parts = expInput.split('/');
 			let month = parts[0];
-			let year = parts[1].length === 2 ? "20" + parts[1] : parts[1]; // Si pone 28, lo convertimos a 2028
+			let year = parts[1].length === 2 ? "20" + parts[1] : parts[1];
 			expDate = `${year}-${month}-01`;
-		}
-		// Caso C: El usuario escribió cualquier otra cosa mal (Ej: "hola", "2028/12")
-		else {
+		} else {
 			showNotification("Formato de caducidad inválido. Usa AAAA-MM o MM/AAAA", "error");
-			return; // ¡Frenamos el código aquí para no provocar el error 500!
+			return;
 		}
-		// ==========================================
+
 		// UI Loading
 		const originalText = saveCardBtn.innerHTML;
 		saveCardBtn.disabled = true;
@@ -569,9 +579,9 @@ if (saveCardBtn) {
 				account_id: accountId,
 				alias: alias,
 				type: typeRadio.value,
-				last_4_digits: digits,
+				card_number: cardNumberRaw,
+				security_code: securityCode,
 				expiration_date: expDate,
-				balance: 0,
 			});
 
 			showNotification("Tarjeta añadida correctamente", "success");
@@ -955,26 +965,7 @@ function initAccountElements() {
 		});
 	}
 
-	if (accIbanInput) {
-		accIbanInput.addEventListener("input", function (e) {
-			let target = e.target;
-			// 1. Eliminar todo lo que no sea número y limitar a 22 dígitos
-			let input = target.value.replace(/\D/g, "").substring(0, 22);
-
-			// 2. Añadir espacios visuales cada 4 números
-			let formatted = input.match(/.{1,4}/g)?.join(" ") || "";
-			target.value = formatted;
-
-			// 3. Feedback visual (Verde si completo)
-			if (input.length === 22) {
-				target.style.color = "#10b981"; // Texto verde
-				target.style.fontWeight = "600";
-			} else {
-				target.style.color = ""; // Normal
-				target.style.fontWeight = "";
-			}
-		});
-	}
+	// IBAN formatting handled by formatters.js (data-format="iban" + data-country-select)
 
 	// Listeners para cerrar
 	if (closeAccountBtn)
@@ -1004,9 +995,20 @@ function initAccountElements() {
 async function saveNewAccount(e) {
 	e.preventDefault();
 
-	// Validar
+	// Validar campos obligatorios
 	if (!accNameInput.value || !accIbanInput.value || !accBalanceInput.value) {
 		showNotification("Por favor rellena todos los campos", "error");
+		return;
+	}
+
+	// Validar longitud IBAN según país
+	const countrySelect = document.getElementById("acc-iban-country");
+	const countryCode = countrySelect ? countrySelect.value : "ES";
+	const ibanDigits = (accIbanInput.dataset.rawValue || accIbanInput.value).replace(/\s+/g, '');
+	const expectedLen = (window.IBAN_LENGTHS && window.IBAN_LENGTHS[countryCode]) || 22;
+
+	if (ibanDigits.length !== expectedLen) {
+		showNotification("El IBAN para " + countryCode + " debe tener " + expectedLen + " dígitos (" + ibanDigits.length + " introducidos)", "error");
 		return;
 	}
 
@@ -1014,10 +1016,6 @@ async function saveNewAccount(e) {
 	saveAccountBtn.disabled = true;
 	saveAccountBtn.innerHTML =
 		'<i class="fas fa-spinner fa-spin"></i> Guardando...';
-
-	const countrySelect = document.getElementById("acc-iban-country");
-	const countryCode = countrySelect ? countrySelect.value : "ES";
-	const ibanDigits = accIbanInput.value.replace(/\s+/g, '');
 
 	const newAccountData = {
 		bank_name: accNameInput.value,
